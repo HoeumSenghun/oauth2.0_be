@@ -7,7 +7,7 @@ Spring Boot backend for the OAuth2 demo project. Handles Google & GitHub login, 
 ## Tech Stack
 
 - Java 17
-- Spring Boot 3
+- Spring Boot 4.1
 - Spring Security (OAuth2 Client)
 - PostgreSQL
 - JWT (jjwt)
@@ -70,14 +70,18 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 GITHUB_CLIENT_ID=your-github-client-id
 GITHUB_CLIENT_SECRET=your-github-client-secret
 JWT_SECRET=any-random-32-character-string
+DB_USERNAME=postgres
+DB_PASSWORD=root
 ```
 
 ### 3. Register Redirect URIs with each provider
 
 ```
-Google:  http://localhost:8080/login/oauth2/code/google
-GitHub:  http://localhost:8080/login/oauth2/code/github
+Google:  http://127.0.0.1:8080/login/oauth2/code/google
+GitHub:  http://127.0.0.1:8080/login/oauth2/code/github
 ```
+
+Open the app at `http://127.0.0.1:8080`. Google treats `localhost` and `127.0.0.1` as different redirect URIs.
 
 ### 4. Run the app
 
@@ -103,6 +107,7 @@ GET http://localhost:8080/ping
 | GET | `/oauth2/authorization/google` | No | Starts Google login |
 | GET | `/oauth2/authorization/github` | No | Starts GitHub login |
 | GET | `/api/auth/me` | Yes (JWT cookie) | Returns current logged-in user |
+| POST | `/api/auth/logout` | Yes (JWT cookie) | Clears the `access_token` cookie |
 
 ---
 
@@ -115,6 +120,8 @@ GET http://localhost:8080/ping
 | `GITHUB_CLIENT_ID` | OAuth Client ID from GitHub OAuth App |
 | `GITHUB_CLIENT_SECRET` | OAuth Client Secret from GitHub OAuth App |
 | `JWT_SECRET` | Secret key used to sign JWT tokens (32+ characters) |
+| `DB_USERNAME` | PostgreSQL username (defaults to `postgres`) |
+| `DB_PASSWORD` | PostgreSQL password (defaults to `root`) |
 
 ---
 
@@ -122,12 +129,12 @@ GET http://localhost:8080/ping
 
 - CSRF is disabled for simplicity — fine for a demo, should be reconsidered for production.
 - `Secure` flag on the JWT cookie is `false` for local HTTP testing — must be `true` in production (HTTPS).
-- GitHub may not return an email if the user has a private email set — need to handle that case.
+- GitHub may not return an email when the address is private. Login still succeeds with a `<id>+<login>@users.noreply.github.com` fallback.
 
 ---
 
 ## Roadmap
 
 - [ ] Add refresh token support
-- [ ] Add logout endpoint (clear cookie)
+- [x] Add logout endpoint (clear cookie)
 - [ ] Add role-based access control
