@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:oauth2_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: test-google-client-id
+            client-secret: test-google-client-secret
+          github:
+            client-id: test-github-client-id
+            client-secret: test-github-client-secret
+
+app:
+  frontend-url: http://localhost:3000
+  cookie:
+    secure: false
+  jwt:
+    secret: test-jwt-secret-key-must-be-32-chars
+    expiration: 86400000
