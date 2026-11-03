@@ -1,0 +1,39 @@
+{
+  "expectations": [
+    {
+      "text": "A persisted refresh token mechanism (a new entity/table and repository) was added, rather than simply extending the access JWT's expiration.",
+      "passed": true,
+      "evidence": "Report: 'src/main/java/com/oauth/oauth2_be/entity/RefreshToken.java' and 'RefreshTokenRepository.java' created; tokens stored as 'Storage, not a JWT... opaque, cryptographically random... only their SHA-256 hash is persisted'."
+    },
+    {
+      "text": "Using a refresh token to get a new access token rotates it: the old refresh token is invalidated and a new one is issued, rather than the same refresh token staying valid indefinitely.",
+      "passed": true,
+      "evidence": "Report section 2: 'RefreshTokenService.rotate(rawToken) looks the token up by hash, rejects it if missing/expired/already-revoked, marks it revoked, and issues a brand-new token in the same transaction, so each refresh token is single-use'."
+    },
+    {
+      "text": "Logging out revokes the refresh token server-side (e.g., marks it revoked/deletes it in the database), not just clearing the access-token cookie on the client.",
+      "passed": true,
+      "evidence": "Report: 'POST /api/auth/logout now also revokes the refresh token found in the refresh_token cookie (not just clearing cookies as before)'; confirmed by a passing RefreshTokenFlowTest case."
+    },
+    {
+      "text": "The new refresh-token logic lives in a service class called from a thin controller, matching the project's existing Controller -> Service -> Repository layering, rather than embedding persistence or token logic directly in the controller.",
+      "passed": true,
+      "evidence": "RefreshTokenService (a @Service class, explicitly 'matching the existing UserService convention') holds the logic; AuthController only calls it and translates the result to an HTTP response."
+    },
+    {
+      "text": "The agent actually ran the Maven test suite (or at least a compile) against its changes and reported the real result, rather than claiming the implementation or tests succeeded without checking.",
+      "passed": true,
+      "evidence": "Report lists 4 real Maven invocations with actual outcomes, including an initial BUILD FAILURE (1/13 tests failed on a real transactional bug) before the fix, then 'BUILD SUCCESS - Tests run: 13, Failures: 0, Errors: 0, Skipped: 0' after a clean rebuild."
+    },
+    {
+      "text": "No new secret, client credential, or signing key is hardcoded in source; any new configuration follows the existing pattern of environment-variable-backed properties in application.yml.",
+      "passed": true,
+      "evidence": "Only new config is 'app.jwt.refresh-expiration: 2592000000' added as a plain numeric property (same pattern as the existing 'app.jwt.expiration'); token generation uses SecureRandom, no new secret/credential introduced."
+    }
+  ],
+  "summary": { "passed": 6, "failed": 0, "total": 6, "pass_rate": 1.0 },
+  "timing": { "executor_duration_seconds": 894.38 },
+  "eval_feedback": {
+    "overall": "Grading is based on the executor's self-reported final report (no raw transcript was available to this grading pass — the subagent's Write tool refused the report path and it hand-backed text instead), not an independently inspected transcript or diff. The report is detailed and includes real BUILD FAILURE -> BUILD SUCCESS evidence, which is a meaningfully harder-to-fake signal than a bare success claim, but full confidence would require diffing the actual isolated repo copy's files against the base project."
+  }
+}

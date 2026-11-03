@@ -51,6 +51,9 @@ public class User {
     @Column(name = "provider_id", nullable = false)
     private String providerId;
 
+    @Column(name = "password_hash")
+    private String passwordHash;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default

@@ -77,11 +77,11 @@ DB_PASSWORD=root
 ### 3. Register Redirect URIs with each provider
 
 ```
-Google:  http://127.0.0.1:8080/login/oauth2/code/google
-GitHub:  http://127.0.0.1:8080/login/oauth2/code/github
+Google:  http://localhost:8080/login/oauth2/code/google
+GitHub:  http://localhost:8080/login/oauth2/code/github
 ```
 
-Open the app at `http://127.0.0.1:8080`. Google treats `localhost` and `127.0.0.1` as different redirect URIs.
+Open the app at `http://localhost:8080`. Google treats `localhost` and `127.0.0.1` as different redirect URIs.
 
 ### 4. Run the app
 

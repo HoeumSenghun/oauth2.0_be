@@ -1,6 +1,10 @@
 server:
   port: 8080
 
+springdoc:
+  swagger-ui:
+    persist-authorization: true
+
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/oauth2_db
@@ -19,17 +23,18 @@ spring:
             client-secret: ${GOOGLE_CLIENT_SECRET}
             scope: openid, profile, email
             # Fixed host. Google compares this string exactly, and localhost and 127.0.0.1 are not the same.
-            redirect-uri: "http://127.0.0.1:8080/login/oauth2/code/google"
+            redirect-uri: "http://localhost:8080/login/oauth2/code/google"
           github:
             client-id: ${GITHUB_CLIENT_ID}
             client-secret: ${GITHUB_CLIENT_SECRET}
             scope: read:user, user:email
-            redirect-uri: "http://127.0.0.1:8080/login/oauth2/code/github"
+            redirect-uri: "http://localhost:8080/login/oauth2/code/github"
 
 app:
-  frontend-url: http://127.0.0.1:3000
+  frontend-url: http://localhost:3000
   cookie:
     secure: false
   jwt:
     secret: ${JWT_SECRET}
-    expiration: 86400000
+    expiration: 900000
+    refresh-expiration: 2592000000

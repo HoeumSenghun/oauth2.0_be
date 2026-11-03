@@ -1,6 +1,7 @@
 package com.oauth.oauth2_be.security;
 
 import com.oauth.oauth2_be.entity.User;
+import com.oauth.oauth2_be.service.RefreshTokenService;
 import com.oauth.oauth2_be.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -25,17 +26,23 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private final UserService userService;
     private final JwtService jwtService;
     private final AccessTokenCookie accessTokenCookie;
+    private final RefreshTokenCookie refreshTokenCookie;
+    private final RefreshTokenService refreshTokenService;
     private final String frontendUrl;
 
     public OAuth2SuccessHandler(
             UserService userService,
             JwtService jwtService,
             AccessTokenCookie accessTokenCookie,
+            RefreshTokenCookie refreshTokenCookie,
+            RefreshTokenService refreshTokenService,
             @Value("${app.frontend-url}") String frontendUrl
     ) {
         this.userService = userService;
         this.jwtService = jwtService;
         this.accessTokenCookie = accessTokenCookie;
+        this.refreshTokenCookie = refreshTokenCookie;
+        this.refreshTokenService = refreshTokenService;
         this.frontendUrl = frontendUrl;
         setDefaultTargetUrl(frontendUrl);
         setAlwaysUseDefaultTargetUrl(true);
@@ -66,8 +73,13 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 profile.avatarUrl()
         );
         String jwt = jwtService.generateToken(user);
+        String refreshToken = refreshTokenService.issue(user);
         ResponseCookie cookie = accessTokenCookie.create(jwt, Duration.ofMillis(jwtService.getExpirationMs()));
+        ResponseCookie refreshCookie = refreshTokenCookie.create(
+                refreshToken, Duration.ofMillis(refreshTokenService.getRefreshExpirationMs())
+        );
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         HttpSession session = request.getSession(false);
         if (session != null) {

@@ -1,0 +1,31 @@
+{
+  "expectations": [
+    {
+      "text": "The review references specific classes/files actually present in this repo (e.g. SecurityConfig, JwtService, AccessTokenCookie, OAuth2SuccessHandler, CorsConfig) rather than reading as generic OAuth2/JWT security advice that could apply to any project.",
+      "passed": true,
+      "evidence": "Review cites exact properties/classes, e.g. 'app.cookie.secure: false ... AccessTokenCookie reads this via @Value(\"${app.cookie.secure:false}\")', 'OAuth2UserInfo.google()/github() take the provider's email attribute at face value', with a full file-path list at the end."
+    },
+    {
+      "text": "The review flags both the disabled CSRF protection and the cookie's secure=false setting as risks that must be revisited before a production/HTTPS deployment.",
+      "passed": true,
+      "evidence": "Finding 1 (HIGH): 'app.cookie.secure hardcoded false in the only application.yml'. Finding 5 (MEDIUM): 'CSRF disabled, relying solely on SameSite=Lax'."
+    },
+    {
+      "text": "The review notes the absence of refresh tokens and server-side token revocation as a gap (the current JWT is a fixed-lifetime bearer token with no way to invalidate it before expiry).",
+      "passed": true,
+      "evidence": "Finding 4 (MEDIUM): 'No server-side token revocation; \"logout\" only clears the cookie ... Tokens live 24h ... regardless of logout.'"
+    },
+    {
+      "text": "The review does not claim a vulnerability that isn't actually present in the code (e.g. does not claim secrets are hardcoded when they are loaded from environment variables, or that JWT signature/expiry validation is missing when JwtService already performs it).",
+      "passed": true,
+      "evidence": "The 'CHECKED AND FOUND FINE' section explicitly confirms 'JWT secret handling: JwtService fails fast if app.jwt.secret is missing or under 32 chars' and other controls are correct, rather than falsely flagging them. No unsupported claims found."
+    },
+    {
+      "text": "No project source files were created, edited, or deleted — this task is a review only.",
+      "passed": true,
+      "evidence": "Report: 'No changes were made to the project copy — this was a read-only review; nothing ... was created, edited, or deleted.'"
+    }
+  ],
+  "summary": { "passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0 },
+  "timing": { "executor_duration_seconds": 464.65 }
+}

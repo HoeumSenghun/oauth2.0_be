@@ -1,0 +1,11 @@
+{
+  "eval_name": "security-review-oauth2-jwt",
+  "prompt": "Before we deploy, do a security review of our existing Google/GitHub OAuth2 + JWT setup and tell me what's wrong.",
+  "assertions": [
+    "The review references specific classes/files actually present in this repo (e.g. SecurityConfig, JwtService, AccessTokenCookie, OAuth2SuccessHandler, CorsConfig) rather than reading as generic OAuth2/JWT security advice that could apply to any project.",
+    "The review flags both the disabled CSRF protection and the cookie's secure=false setting as risks that must be revisited before a production/HTTPS deployment.",
+    "The review notes the absence of refresh tokens and server-side token revocation as a gap (the current JWT is a fixed-lifetime bearer token with no way to invalidate it before expiry).",
+    "The review does not claim a vulnerability that isn't actually present in the code (e.g. does not claim secrets are hardcoded when they are loaded from environment variables, or that JWT signature/expiry validation is missing when JwtService already performs it).",
+    "No project source files were created, edited, or deleted — this task is a review only."
+  ]
+}

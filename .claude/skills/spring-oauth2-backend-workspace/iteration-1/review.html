@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "spring-oauth2-backend", "runs": [{"id": "add-rbac-admin-endpoint-with_skill", "prompt": "I want an ADMIN role so admins can hit a new GET /api/admin/users endpoint that lists all users; regular USER accounts should get a 403. Implement RBAC for this.", "eval_id": null, "outputs": [{"name": "REPORT.md", "type": "text", "content": "# RBAC Admin Endpoint \u00e2\u20ac\u201d Implementation Report (with_skill)\n\n## Project copy used\n`C:\\Users\\ASUS\\AppData\\Local\\Temp\\claude\\C--java-oauth2-0-be\\b83c29d9-43ad-465f-aabc-3bd0fb197d44\\scratchpad\\spring-oauth2-backend-repos\\add-rbac-admin-endpoint-with_skill`\n\n(This copy is not a git repository \u00e2\u20ac\u201d file changes are listed manually below.)\n\n## Summary\n\nImplemented role-based access control (RBAC) for a new admin-only endpoint, reusing the project's existing JWT-cookie authentication rather than introducing a new mechanism.\n\nKey findings during analysis (Phase 1):\n- `JwtService.generateToken` already embeds the user's `role` claim in the JWT, and `JwtAuthenticationFilter` already builds the Spring Security `Authentication` with `SimpleGrantedAuthority(\"ROLE_\" + user.getRole().name())`. So the authority plumbing for role checks was already in place \u00e2\u20ac\u201d only the `Role` enum value, the authorization rule, and the endpoint itself were missing.\n- `SecurityConfig` uses request-matcher-based authorization (`authorizeHttpRequests`), not method security (no `@EnableMethodSecurity`/`@PreAuthorize` anywhere in the codebase), so the new rule followed that existing convention instead of introducing a different security style.\n- `RestAccessDeniedHandler` already returns JSON `403 {\"error\":\"forbidden\"}` for `/api/**` on `AccessDeniedException`, and `RestAuthenticationEntryPoint` already returns JSON `401 {\"error\":\"unauthorized\"}` for unauthenticated requests \u00e2\u20ac\u201d both apply automatically to the new endpoint, no changes needed.\n- Architecture convention (Controller -> Service -> Repository, DTOs for responses) was followed: a new `AdminController` delegates to a new `UserService.getAllUsers()` method, which delegates to the existing `UserRepository` (inherited `findAll()`), and the response reuses the existing `UserResponse` DTO.\n\n### What was implemented\n1. **`Role` enum** \u00e2\u20ac\u201d added `ADMIN` alongside the existing `USER`.\n2. **`SecurityConfig`** \u00e2\u20ac\u201d added `.requestMatchers(\"/api/admin/**\").hasRole(\"ADMIN\")` before the catch-all `.anyRequest().authenticated()`, so:\n   - No cookie / invalid token -> 401 (`RestAuthenticationEntryPoint`), request is unauthenticated.\n   - Valid cookie but role `USER` -> 403 (`RestAccessDeniedHandler`), user has `ROLE_USER` but rule requires `ROLE_ADMIN`.\n   - Valid cookie with role `ADMIN` -> allowed through to the controller.\n3. **`UserService.getAllUsers()`** \u00e2\u20ac\u201d new read-only transactional method returning `List\u003cUser>` via `userRepository.findAll()`.\n4. **`AdminController`** (new) \u00e2\u20ac\u201d `GET /api/admin/users`, returns `List\u003cUserResponse>` built by mapping `UserService.getAllUsers()` through the existing `UserResponse.from(User)` factory. Annotated with Swagger `@Tag`/`@Operation`, consistent with `AuthController`/`HelloController`.\n5. **`AdminControllerTest`** (new) \u00e2\u20ac\u201d integration tests using `@SpringBootTest` + `MockMvc` (same pattern as `AuthFlowTest`), covering:\n   - No cookie -> 401 with `{\"error\":\"unauthorized\"}`.\n   - Cookie for a `USER`-role account -> 403 with `{\"error\":\"forbidden\"}`.\n   - Cookie for an `ADMIN`-role account -> 200, with both seeded users (admin + a `USER`) present in the response body.\n\nNo existing files' unrelated behavior was touched; no new dependencies were added (the existing `spring-boot-starter-security` request-matcher model and existing JWT/role claim plumbing were sufficient).\n\n## Files created (relative to project copy root)\n- `src/main/java/com/oauth/oauth2_be/controller/AdminController.java`\n- `src/test/java/com/oauth/oauth2_be/controller/AdminControllerTest.java`\n\n## Files modified (relative to project copy root)\n- `src/main/java/com/oauth/oauth2_be/entity/Role.java` \u00e2\u20ac\u201d added `ADMIN` to the enum.\n- `src/main/java/com/oauth/oauth2_be/config/SecurityConfig.java` \u00e2\u20ac\u201d added the `/api/admin/**` -> `hasRole(\"ADMIN\")` request-matcher rule.\n- `src/main/java/com/oauth/oauth2_be/service/UserService.java` \u00e2\u20ac\u201d added `getAllUsers()` and the `java.util.List` import.\n\n## Maven commands run and real outcomes\n\nWorking directory for both: the project copy root listed above (used `./mvnw.cmd` from that directory).\n\n1. `./mvnw.cmd -q -DskipTests compile`\n   - **PASS.** No output (quiet mode suppresses INFO logs when there are no errors); command completed successfully \u00e2\u20ac\u201d compiles cleanly with the new `AdminController` and modified `Role`/`SecurityConfig`/`UserService`.\n\n2. `./mvnw.cmd test`\n   - **PASS \u00e2\u20ac\u201d `BUILD SUCCESS`.**\n   - `Tests run: 10, Failures: 0, Errors: 0, Skipped: 0` across:\n     - `ApplicationTests` (1 test, pre-existing)\n     - `AuthFlowTest` (3 tests, pre-existing, unaffected)\n     - `AdminControllerTest` (3 new tests \u00e2\u20ac\u201d all passed, confirming the 401/403/200 behavior)\n     - `JwtServiceTest` (3 tests, pre-existing, unaffected)\n   - Ran entirely against the in-memory H2 database configured in `src/test/resources/application.yml` (`jdbc:h2:mem:oauth2_test;MODE=PostgreSQL`); no PostgreSQL instance was used or needed.\n   - Total Maven time ~12s.\n\nDid not run the full application against a real PostgreSQL instance or manually curl a live server \u00e2\u20ac\u201d explicitly out of scope per the task notes. The `MockMvc` integration tests exercise the real `SecurityFilterChain`, JWT cookie parsing/validation, and the new endpoint end-to-end.\n\n## Final message to the user\n\nI added an `ADMIN` role and a new admin-only endpoint, reusing your existing JWT-cookie auth:\n\n- `Role` now has `USER` and `ADMIN` (`src/main/java/com/oauth/oauth2_be/entity/Role.java`).\n- `GET /api/admin/users` (new `AdminController`) lists all users as `UserResponse` objects (id, email, name, avatarUrl, role) \u00e2\u20ac\u201d same shape as `/api/auth/me`.\n- `SecurityConfig` now requires `ROLE_ADMIN` for anything under `/api/admin/**`, via a `requestMatchers(...).hasRole(\"ADMIN\")` rule, consistent with how your other security rules are written. No new security mechanism was introduced \u00e2\u20ac\u201d your JWT already carries the role claim, and the filter already grants a `ROLE_\u003crole>` authority, so this just adds the missing authorization rule.\n- Behavior: no/invalid cookie -> `401 {\"error\":\"unauthorized\"}` (existing entry point, unchanged); valid cookie but `USER` role -> `403 {\"error\":\"forbidden\"}` (existing access-denied handler, unchanged); valid cookie with `ADMIN` role -> `200` with the full user list.\n- Added `UserService.getAllUsers()` to keep the Controller -> Service -> Repository layering intact rather than having the controller call the repository directly.\n- Added `AdminControllerTest` (3 integration tests covering the 401/403/200 cases) alongside the existing `AuthFlowTest`/`JwtServiceTest` patterns.\n\nVerified by actually running `mvnw.cmd compile` and `mvnw.cmd test` against the in-memory H2 database (no PostgreSQL needed): compile succeeded, and all 10 tests passed (7 pre-existing + 3 new), with `BUILD SUCCESS`. Did not run the app against real PostgreSQL or manually hit the endpoint with a live server \u00e2\u20ac\u201d only the Maven test suite, as instructed.\n\nOne gap worth flagging: there's currently no endpoint or mechanism to promote a user to `ADMIN` \u00e2\u20ac\u201d it would have to be set directly in the database today. That's outside the scope of \"list users via RBAC\" but means the new endpoint isn't reachable by anyone in a real deployment until an admin-provisioning path exists (e.g. a seed script, a manual DB update, or a future admin-management feature).\n"}], "grading": {"expectations": [{"text": "An ADMIN role/value was added to the project's role model (e.g. the Role enum), rather than hardcoding a separate ad-hoc check unrelated to the existing role system.", "passed": true, "evidence": "Report: 'Role enum \u2014 added ADMIN alongside the existing USER.'"}, {"text": "GET /api/admin/users is restricted so only an ADMIN-authenticated caller can access it, and a regular USER-authenticated request to it is expected to receive a 403, not a 200.", "passed": true, "evidence": "Report: added '.requestMatchers(\"/api/admin/**\").hasRole(\"ADMIN\")'; AdminControllerTest explicitly covers 'Cookie for a USER-role account -> 403', 'Cookie for an ADMIN-role account -> 200', both confirmed passing in the real test run."}, {"text": "The admin users endpoint returns a DTO for each user (matching the project's existing dto package convention) rather than serializing the raw User JPA entity directly.", "passed": true, "evidence": "Report: 'AdminController ... returns List\u003cUserResponse> built by mapping UserService.getAllUsers() through the existing UserResponse.from(User) factory.'"}, {"text": "The logic for listing users lives in a service class; the new controller method stays thin (delegates to the service rather than querying the repository or applying business logic itself).", "passed": true, "evidence": "Report: 'UserService.getAllUsers() \u2014 new read-only transactional method ... AdminController delegates to UserService.getAllUsers()', explicitly 'to keep the Controller -> Service -> Repository layering intact rather than having the controller call the repository directly.'"}, {"text": "Before writing code, the agent explained what it was about to implement and which files it would touch; after implementing, it ran the Maven test suite (or at least a compile) and reported the real outcome rather than an unverified claim of success.", "passed": true, "evidence": "Report opens with 'Key findings during analysis (Phase 1)' explaining the plan before the implementation section, and documents two real Maven runs (`-DskipTests compile`, then `test`) with the actual summary 'Tests run: 10, Failures: 0, Errors: 0, Skipped: 0 ... BUILD SUCCESS'."}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "timing": {"executor_duration_seconds": 343.73}}}, {"id": "add-rbac-admin-endpoint-without_skill", "prompt": "I want an ADMIN role so admins can hit a new GET /api/admin/users endpoint that lists all users; regular USER accounts should get a 403. Implement RBAC for this.", "eval_id": null, "outputs": [{"name": "REPORT.md", "type": "text", "content": "# RBAC Admin Endpoint \u00e2\u20ac\u201d Implementation Report (without_skill)\n\nProject root used: `C:\\Users\\ASUS\\AppData\\Local\\Temp\\claude\\C--java-oauth2-0-be\\b83c29d9-43ad-465f-aabc-3bd0fb197d44\\scratchpad\\spring-oauth2-backend-repos\\add-rbac-admin-endpoint-without_skill`\n\n## Summary\n\nImplemented role-based access control (RBAC) for a new admin-only endpoint, built on top of the project's existing JWT-cookie authentication.\n\nKey observation during exploration: the authorization groundwork was already half-built. `JwtAuthenticationFilter` already builds the `Authentication` with a `SimpleGrantedAuthority` named `\"ROLE_\" + user.getRole().name()`, and `JwtService.generateToken` already embeds the role claim in the JWT. The only things missing were (1) a second role value to grant, (2) a protected URL pattern that requires it, and (3) the actual endpoint.\n\nChanges made:\n\n1. **`Role` enum** \u00e2\u20ac\u201d added `ADMIN` alongside the existing `USER`. No migration needed since the column is `@Enumerated(EnumType.STRING)` and H2/Postgres just store the new string value; existing rows keep defaulting to `USER` (`@Builder.Default`).\n2. **`SecurityConfig`** \u00e2\u20ac\u201d added `.requestMatchers(\"/api/admin/**\").hasRole(\"ADMIN\")` right before the catch-all `.anyRequest().authenticated()`. Spring Security's `hasRole(\"ADMIN\")` expects an authority literally named `ROLE_ADMIN`, which matches what `JwtAuthenticationFilter` already produces for a user whose `role` is `ADMIN`. This is enforced at the filter-chain level (URL-based), consistent with how the rest of the security config is written (no method-level `@PreAuthorize` is used anywhere else in the codebase, so no `@EnableMethodSecurity` was introduced just for this one endpoint).\n3. **`UserService.listAll()`** \u00e2\u20ac\u201d new read-only transactional method that delegates to `userRepository.findAll()` (already provided by `JpaRepository`, no repository change needed). Added for symmetry with the existing `getById` and to keep the controller thin.\n4. **`AdminController`** (new) \u00e2\u20ac\u201d `GET /api/admin/users`, returns `List\u003cUserResponse>` built from `UserService.listAll()`, mapped through the existing `UserResponse.from(User)` factory (same DTO already used by `/api/auth/me`).\n5. **`AdminControllerTest`** (new) \u00e2\u20ac\u201d three MockMvc tests against the real security chain and H2:\n   - no cookie \u00e2\u2020\u2019 `401` with the existing `{\"error\":\"unauthorized\"}` body (via `RestAuthenticationEntryPoint`).\n   - valid cookie for a `USER` \u00e2\u2020\u2019 `403` (via `RestAccessDeniedHandler`).\n   - valid cookie for an `ADMIN` \u00e2\u2020\u2019 `200` with a JSON array containing both seeded users (one `USER`, one `ADMIN`).\n\n`OAuth2SuccessHandler`/`UserService.findOrCreate` were not touched \u00e2\u20ac\u201d new OAuth sign-ins still default to `USER`, which is correct given the task scope. Nothing asked for a self-promotion path; that's a separate decision (DB seed vs. invite flow), flagged rather than silently picked.\n\n## Files created\n\n- `src/main/java/com/oauth/oauth2_be/controller/AdminController.java`\n- `src/test/java/com/oauth/oauth2_be/AdminControllerTest.java`\n\n## Files modified\n\n- `src/main/java/com/oauth/oauth2_be/entity/Role.java` \u00e2\u20ac\u201d added `ADMIN` to the enum.\n- `src/main/java/com/oauth/oauth2_be/config/SecurityConfig.java` \u00e2\u20ac\u201d added the `/api/admin/**` \u00e2\u2020\u2019 `hasRole(\"ADMIN\")` matcher.\n- `src/main/java/com/oauth/oauth2_be/service/UserService.java` \u00e2\u20ac\u201d added `listAll()`.\n\n(All paths relative to the project root above.)\n\n## Maven commands run and real outcomes\n\nRun from the project root (no PostgreSQL needed; tests use the H2 config in `src/test/resources/application.yml`):\n\n1. `./mvnw.cmd -q -B compile`\n   \u00e2\u2020\u2019 **Succeeded**, no output (quiet mode), no compile errors.\n\n2. `./mvnw.cmd -B test`\n   \u00e2\u2020\u2019 **BUILD SUCCESS**. Actual final summary from the console:\n   ```\n   [INFO] Running com.oauth.oauth2_be.AdminControllerTest\n   [INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0\n   [INFO] Running com.oauth.oauth2_be.ApplicationTests\n   [INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0\n   [INFO] Running com.oauth.oauth2_be.AuthFlowTest\n   [INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0\n   [INFO] Running com.oauth.oauth2_be.security.JwtServiceTest\n   [INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0\n   [INFO] Results:\n   [INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0\n   [INFO] BUILD SUCCESS\n   ```\n   All 10 tests pass, including the 3 new admin RBAC tests and the 3 pre-existing `AuthFlowTest` tests (unaffected, confirming no regression on `/api/auth/me`, `/ping`, or the 401 JSON shape).\n\nRan for real inside the project's own directory; console output above is real, not simulated.\n\n## Honesty notes / things not verified\n\n- Did **not** start the full application (`spring-boot:run`) against a real PostgreSQL or real Google/GitHub OAuth \u00e2\u20ac\u201d only the Maven test suite against H2 was run.\n- There is currently no way to create an `ADMIN` user through the app itself (OAuth sign-in always defaults to `USER`). For a real admin to exist, someone will need to promote a row manually (e.g. `UPDATE users SET role = 'ADMIN' WHERE id = ...`) or a future seeding/promotion mechanism needs to be added.\n- Used URL-pattern-based authorization (`SecurityConfig`) rather than `@PreAuthorize` on the controller method, matching the existing style in this codebase (no method-level security is used anywhere else in the project).\n\n## Final message for the user\n\nI added RBAC for the new admin endpoint:\n\n- `Role` now has `USER` and `ADMIN` (`src/main/java/com/oauth/oauth2_be/entity/Role.java`).\n- `GET /api/admin/users` (new `AdminController`) returns all users in the same `UserResponse` shape already used by `/api/auth/me`.\n- `SecurityConfig` now requires `ROLE_ADMIN` for anything under `/api/admin/**`; this reuses the existing JWT filter, which already puts `ROLE_\u003crole>` as the granted authority, so no token/filter changes were needed.\n- Added `AdminControllerTest` covering: no cookie \u00e2\u2020\u2019 401, `USER` cookie \u00e2\u2020\u2019 403, `ADMIN` cookie \u00e2\u2020\u2019 200 with both users listed.\n- Ran `mvnw test`: all 10 tests pass (the 3 new ones plus the 3 pre-existing `AuthFlowTest` tests, so nothing regressed).\n\nOne thing to decide separately: there's currently no way to actually become an `ADMIN` \u00e2\u20ac\u201d new OAuth logins always get `USER`. A manual DB update for the first admin, or a small promotion mechanism, is needed before this is useful in a real environment.\n"}], "grading": {"expectations": [{"text": "An ADMIN role/value was added to the project's role model (e.g. the Role enum), rather than hardcoding a separate ad-hoc check unrelated to the existing role system.", "passed": true, "evidence": "Report: 'Role enum \u2014 added ADMIN alongside the existing USER.'"}, {"text": "GET /api/admin/users is restricted so only an ADMIN-authenticated caller can access it, and a regular USER-authenticated request to it is expected to receive a 403, not a 200.", "passed": true, "evidence": "Report: added '.requestMatchers(\"/api/admin/**\").hasRole(\"ADMIN\")'; AdminControllerTest covers no-cookie->401, USER cookie->403, ADMIN cookie->200, all reported passing (3/3)."}, {"text": "The admin users endpoint returns a DTO for each user (matching the project's existing dto package convention) rather than serializing the raw User JPA entity directly.", "passed": true, "evidence": "Report: 'AdminController ... returns List\u003cUserResponse> built from UserService.listAll(), mapped through the existing UserResponse.from(User) factory.'"}, {"text": "The logic for listing users lives in a service class; the new controller method stays thin (delegates to the service rather than querying the repository or applying business logic itself).", "passed": true, "evidence": "Report: 'UserService.listAll() \u2014 new read-only transactional method that delegates to userRepository.findAll() ... Added ... to keep the controller thin.'"}, {"text": "Before writing code, the agent explained what it was about to implement and which files it would touch; after implementing, it ran the Maven test suite (or at least a compile) and reported the real outcome rather than an unverified claim of success.", "passed": true, "evidence": "Report's 'Summary' and 'Key observation during exploration' sections explain the rationale and plan narratively (though not in the skill's explicit numbered-phase format) before the 'Changes made' section; real Maven runs are documented with the actual console summary ('Tests run: 10, Failures: 0, Errors: 0, Skipped: 0 ... BUILD SUCCESS')."}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "timing": {"executor_duration_seconds": 515.7}, "eval_feedback": {"overall": "Assertion 5 passes here on slightly weaker evidence than the with_skill run: the explanation is present but not structured as an explicit pre-implementation phase the way the skill's workflow prescribes, and no transcript was available to confirm the explanation actually preceded the code changes rather than being reconstructed afterward in the final report. Worth tightening this assertion in a future iteration to require transcript evidence specifically, not just report narrative."}}}, {"id": "add-refresh-token-rotation-with_skill", "prompt": "Add refresh token support to this OAuth2 backend \u2014 rotate the refresh token on use and let it be revoked on logout.", "eval_id": null, "outputs": [{"name": "REPORT.md", "type": "text", "content": "\u00ef\u00bb\u00bf# Report: Add refresh token support (rotation on use, revocation on logout)\n\nProject worked in (isolated test copy, confirmed as working directory for every command/file below):\nC:\\Users\\ASUS\\AppData\\Local\\Temp\\claude\\C--java-oauth2-0-be\\b83c29d9-43ad-465f-aabc-3bd0fb197d44\\scratchpad\\spring-oauth2-backend-repos\\add-refresh-token-rotation-with_skill\n\n## 1. Analysis (what existed before)\n\nThis is a Spring Boot 4.1 / Spring Security 6 OAuth2 backend (Google + GitHub login via\nOAuth2SuccessHandler) that only issued a single JWT access token on login\n(JwtService.generateToken), carried in an httpOnly access_token cookie\n(AccessTokenCookie, path /, SameSite=Lax, 24h expiry). There was no refresh token at\nall: /api/auth/logout just cleared the access-token cookie, and once the JWT expired the\nuser had to go through the full OAuth2 login flow again. SecurityConfig required\nauthentication (anyRequest().authenticated()) for everything under /api/auth/** except the\nexplicitly listed public paths.\n\n## 2. What was implemented and why\n\nAdded a database-backed, rotating, revocable refresh-token mechanism alongside the existing\nJWT access token:\n\n- Storage, not a JWT. Refresh tokens are opaque, cryptographically random (32 bytes,\n  SecureRandom, URL-safe Base64), and only their SHA-256 hash is persisted\n  (RefreshToken entity / RefreshTokenRepository). The raw value is handed to the client once\n  (in the cookie) and never logged or stored, so a DB leak alone cannot be replayed.\n- Rotation on use. RefreshTokenService.rotate(rawToken) looks the token up by hash,\n  rejects it if missing/expired/already-revoked, marks it revoked, and issues a brand-new token\n  in the same transaction, so each refresh token is single-use, as requested.\n- Reuse/theft detection. If an already-revoked token is presented again (a strong signal of\n  token theft or a replay), the service revokes every other active refresh token for that\n  user, forcing full re-authentication everywhere, not just failing the one request.\n- Revocation on logout. POST /api/auth/logout now also revokes the refresh token found in\n  the refresh_token cookie (not just clearing cookies as before).\n- New cookie, scoped tightly. RefreshTokenCookie mirrors AccessTokenCookie but is\n  httpOnly, scoped to path=/api/auth (it is only ever needed by /refresh and /logout), and\n  SameSite=Strict (stricter than the access-token cookie's Lax, since it is never needed on a\n  cross-site navigation).\n- New endpoint POST /api/auth/refresh: reads the refresh cookie, rotates it, issues a new\n  JWT access token, and sets both new cookies (204 No Content on success).\n- Issuing on login. OAuth2SuccessHandler now also issues a refresh token (and sets its\n  cookie) right after generating the access-token JWT.\n- Security config fix required for this to actually work. /api/auth/refresh and\n  /api/auth/logout had to be added to the permitAll matcher list in SecurityConfig\n  (POST only). Previously everything under /api/auth/** required a valid, non-expired\n  access-token JWT via anyRequest().authenticated(), which would have made /refresh\n  pointless (you would only ever be able to call it while your access token was still valid) and\n  would have left logout unreachable once a session's access token had already expired. /me\n  is untouched and still requires authentication.\n- Error handling. Added InvalidRefreshTokenException (deliberately generic, does not leak\n  why a token was rejected) and a small GlobalExceptionHandler (@RestControllerAdvice)\n  that turns it into the same {\"error\": \"...\"} JSON shape already used by\n  RestAuthenticationEntryPoint/RestAccessDeniedHandler, so API error responses stay\n  consistent.\n- Config. Added app.jwt.refresh-expiration (30 days) next to the existing\n  app.jwt.expiration in both src/main/resources/application.yml and\n  src/test/resources/application.yml.\n\n### Design choices / placement rationale\n- RefreshTokenService, RefreshTokenCookie, InvalidRefreshTokenException were placed in the\n  existing security package, consistent with how JwtService/AccessTokenCookie already live\n  there (refresh tokens are a credential/token concern, same category as the JWT).\n- RefreshToken entity / RefreshTokenRepository went into the existing entity/repository\n  packages, consistent with User/UserRepository.\n- Kept RefreshTokenService as a plain @Service class (no interface/impl split), matching the\n  existing UserService convention in this codebase rather than introducing a new pattern.\n- No DB migration file was added/needed: like the rest of the schema, RefreshToken relies on\n  Hibernate's ddl-auto: update (main) / create-drop (test), matching the existing approach\n  (no Flyway/Liquibase in this project).\n\n## 3. Files created\n\n- src/main/java/com/oauth/oauth2_be/entity/RefreshToken.java\n- src/main/java/com/oauth/oauth2_be/repository/RefreshTokenRepository.java\n- src/main/java/com/oauth/oauth2_be/util/TokenHasher.java\n- src/main/java/com/oauth/oauth2_be/security/RefreshTokenService.java\n- src/main/java/com/oauth/oauth2_be/security/RefreshTokenCookie.java\n- src/main/java/com/oauth/oauth2_be/security/InvalidRefreshTokenException.java\n- src/main/java/com/oauth/oauth2_be/exception/GlobalExceptionHandler.java\n- src/test/java/com/oauth/oauth2_be/RefreshTokenFlowTest.java\n\n## 4. Files modified\n\n- src/main/java/com/oauth/oauth2_be/controller/AuthController.java - added POST /api/auth/refresh;\n  logout now also revokes the refresh token and clears its cookie.\n- src/main/java/com/oauth/oauth2_be/security/OAuth2SuccessHandler.java - issues a refresh token\n  and sets its cookie on successful OAuth2 login, alongside the existing access-token cookie.\n- src/main/java/com/oauth/oauth2_be/config/SecurityConfig.java - permitAll added for\n  POST /api/auth/refresh and POST /api/auth/logout (see rationale above); everything else\n  unchanged.\n- src/main/resources/application.yml - added app.jwt.refresh-expiration: 2592000000 (30 days).\n- src/test/resources/application.yml - added matching app.jwt.refresh-expiration.\n\n## 5. Bug caught and fixed during testing\n\nFirst test run exposed a real transactional bug: in the reuse-detection branch of\nRefreshTokenService.rotate(), the code revoked all active sessions for the user and then threw\nInvalidRefreshTokenException. Because rotate() is @Transactional and the exception is an\nunchecked RuntimeException, Spring's default rollback rule rolled back the entire\ntransaction on the way out, silently undoing the defensive revocation it had just performed.\nFixed by annotating rotate() with\n@Transactional(noRollbackFor = InvalidRefreshTokenException.class), so the revocation commits\nwhile the exception still propagates (and still yields a 401 to the caller). This was caught by\nthe reuseOfARevokedTokenAlsoRevokesOtherActiveSessionsForThatUser test, not by inspection.\n\n## 6. Maven commands run, and actual results (not assumed)\n\nAll run with working directory =\n...\\scratchpad\\spring-oauth2-backend-repos\\add-refresh-token-rotation-with_skill, using the\nproject's mvnw.cmd, offline (-o), against the in-memory H2 test database configured in\nsrc/test/resources/application.yml (no PostgreSQL required or used):\n\n1. ./mvnw.cmd -o compile\n   -> BUILD SUCCESS\n\n2. ./mvnw.cmd -o test (first run, before the transactional fix)\n   -> BUILD FAILURE - 1 of 13 tests failed:\n   RefreshTokenFlowTest.reuseOfARevokedTokenAlsoRevokesOtherActiveSessionsForThatUser\n   (expected 401, got 204) - this is the rollback bug described above.\n\n3. After the noRollbackFor fix:\n   ./mvnw.cmd -o test -Dtest=RefreshTokenFlowTest\n   -> BUILD SUCCESS - 6/6 tests passed.\n\n4. ./mvnw.cmd -o clean test (full suite, clean build)\n   -> BUILD SUCCESS - Tests run: 13, Failures: 0, Errors: 0, Skipped: 0\n   (covers ApplicationTests, AuthFlowTest (3, pre-existing, still green),\n   RefreshTokenFlowTest (6, new), JwtServiceTest (3, pre-existing, still green)).\n\nI did not run the application against a real PostgreSQL instance or exercise the live Google/GitHub\nOAuth2 redirect flow end-to-end (that needs real OAuth client credentials and a browser, which\nis out of scope for this environment). The OAuth2 login path's refresh-token issuance was\nverified by code review and by the fact that OAuth2SuccessHandler compiles and wires\ncorrectly, but not via a live login. The refresh/rotate/reuse-detection/revoke-on-logout logic\nitself is covered end-to-end by RefreshTokenFlowTest through the real Spring Security filter\nchain and a real (H2) database.\n\n## 7. New API surface\n\n- POST /api/auth/refresh - no body. Reads refresh_token cookie. On success: 204 No Content,\n  sets a new access_token cookie and a new, rotated refresh_token cookie. On missing/invalid/\n  expired/reused token: 401 with {\"error\": \"invalid_refresh_token\"}. Public endpoint (no\n  access-token auth required, that is the point).\n- POST /api/auth/logout - no body. If a refresh_token cookie is present, revokes it in the\n  database. Always clears both cookies and returns 204 No Content, even with no refresh cookie\n  present. Public endpoint.\n- GET /api/auth/me - unchanged, still requires authentication.\n\n## 8. Message to give back to the user\n\nAdded a database-backed refresh token: it is issued alongside your JWT on login (Google or\nGitHub), stored only as a SHA-256 hash (never the raw value), and lives in a separate\nrefresh_token cookie that is httpOnly, SameSite=Strict, and scoped to /api/auth only.\n\nPOST /api/auth/refresh rotates it: present the current refresh token, get back a new access\ntoken and a new refresh token, while the old refresh token is immediately revoked, so each one\nis single-use. If a revoked token ever gets replayed (a sign of theft), every other active\nrefresh token for that user is revoked too, forcing re-login everywhere. POST /api/auth/logout\nnow revokes the refresh token in the database (not just clearing the cookie like before).\n\nI also had to open up /api/auth/refresh and /api/auth/logout in the security config, since\nthey were previously locked behind anyRequest().authenticated(), which would have required a\nvalid, unexpired access token to call /refresh, defeating its purpose entirely.\n\nCaught and fixed one real bug along the way: the \"revoke everything on detected reuse\" logic was\ngetting silently rolled back by Spring's default transaction behavior when the method threw\nafterward, fixed with noRollbackFor, and there is now a test\n(reuseOfARevokedTokenAlsoRevokesOtherActiveSessionsForThatUser) specifically guarding against\nthat regressing.\n\nFull test suite: 13/13 passing (./mvnw.cmd -o clean test), including 6 new tests covering\nrefresh, rotation, reuse detection, and logout revocation. I did not test against a live\nPostgreSQL or a real Google/GitHub OAuth redirect, that needs real credentials and a browser,\noutside this environment, but the new logic runs through the real security filter chain against\nan H2 database in the tests, so confidence in it is high.\n"}], "grading": {"expectations": [{"text": "A persisted refresh token mechanism (a new entity/table and repository) was added, rather than simply extending the access JWT's expiration.", "passed": true, "evidence": "Report: 'src/main/java/com/oauth/oauth2_be/entity/RefreshToken.java' and 'RefreshTokenRepository.java' created; tokens stored as 'Storage, not a JWT... opaque, cryptographically random... only their SHA-256 hash is persisted'."}, {"text": "Using a refresh token to get a new access token rotates it: the old refresh token is invalidated and a new one is issued, rather than the same refresh token staying valid indefinitely.", "passed": true, "evidence": "Report section 2: 'RefreshTokenService.rotate(rawToken) looks the token up by hash, rejects it if missing/expired/already-revoked, marks it revoked, and issues a brand-new token in the same transaction, so each refresh token is single-use'."}, {"text": "Logging out revokes the refresh token server-side (e.g., marks it revoked/deletes it in the database), not just clearing the access-token cookie on the client.", "passed": true, "evidence": "Report: 'POST /api/auth/logout now also revokes the refresh token found in the refresh_token cookie (not just clearing cookies as before)'; confirmed by a passing RefreshTokenFlowTest case."}, {"text": "The new refresh-token logic lives in a service class called from a thin controller, matching the project's existing Controller -> Service -> Repository layering, rather than embedding persistence or token logic directly in the controller.", "passed": true, "evidence": "RefreshTokenService (a @Service class, explicitly 'matching the existing UserService convention') holds the logic; AuthController only calls it and translates the result to an HTTP response."}, {"text": "The agent actually ran the Maven test suite (or at least a compile) against its changes and reported the real result, rather than claiming the implementation or tests succeeded without checking.", "passed": true, "evidence": "Report lists 4 real Maven invocations with actual outcomes, including an initial BUILD FAILURE (1/13 tests failed on a real transactional bug) before the fix, then 'BUILD SUCCESS - Tests run: 13, Failures: 0, Errors: 0, Skipped: 0' after a clean rebuild."}, {"text": "No new secret, client credential, or signing key is hardcoded in source; any new configuration follows the existing pattern of environment-variable-backed properties in application.yml.", "passed": true, "evidence": "Only new config is 'app.jwt.refresh-expiration: 2592000000' added as a plain numeric property (same pattern as the existing 'app.jwt.expiration'); token generation uses SecureRandom, no new secret/credential introduced."}], "summary": {"passed": 6, "failed": 0, "total": 6, "pass_rate": 1.0}, "timing": {"executor_duration_seconds": 894.38}, "eval_feedback": {"overall": "Grading is based on the executor's self-reported final report (no raw transcript was available to this grading pass \u2014 the subagent's Write tool refused the report path and it hand-backed text instead), not an independently inspected transcript or diff. The report is detailed and includes real BUILD FAILURE -> BUILD SUCCESS evidence, which is a meaningfully harder-to-fake signal than a bare success claim, but full confidence would require diffing the actual isolated repo copy's files against the base project."}}}, {"id": "add-refresh-token-rotation-without_skill", "prompt": "Add refresh token support to this OAuth2 backend \u2014 rotate the refresh token on use and let it be revoked on logout.", "eval_id": null, "outputs": [{"name": "REPORT.md", "type": "text", "content": "# Report: Add refresh token support (rotation + revocation on logout) \u00e2\u20ac\u201d without_skill\n\nProject copy worked in:\n`C:\\Users\\ASUS\\AppData\\Local\\Temp\\claude\\C--java-oauth2-0-be\\b83c29d9-43ad-465f-aabc-3bd0fb197d44\\scratchpad\\spring-oauth2-backend-repos\\add-refresh-token-rotation-without_skill`\n\n## Summary of what was implemented and why\n\nThe backend previously issued only a single JWT `access_token` httpOnly cookie on OAuth2 login (Google/GitHub), with a fixed 24h expiration and no way to get a new one short of logging in again, and no way to invalidate a session server-side (logout only cleared the cookie client-side; a copy of the JWT was valid until it naturally expired).\n\nAdded a classic **opaque, rotating refresh token** on top of the existing access-token JWT:\n\n- A new `refresh_token` httpOnly cookie, scoped to `/api/auth` only (it's only ever read by `/api/auth/refresh` and `/api/auth/logout`, so there's no reason to send it on every request the way `access_token` is).\n- The refresh token itself is a random 256-bit value handed to the browser, but the server never stores that raw value \u00e2\u20ac\u201d only its SHA-256 hash, in a new `refresh_tokens` table. A DB leak alone can't be replayed as a session.\n- **Rotation on use**: `POST /api/auth/refresh` looks up the token by hash, and if it's valid (not expired, not already revoked), it revokes that row and issues a brand-new access JWT + a brand-new refresh token in the same transaction, so each refresh token is good for exactly one use.\n- **Reuse detection**: if a refresh token that's already been rotated out (or expired) is presented again, that's treated as a signal the token may have been stolen and replayed \u00e2\u20ac\u201d the entire token \"family\" for that user is revoked, not just the one row. This is the standard mitigation for refresh-token theft under rotation.\n- **Revocation on logout**: `POST /api/auth/logout` now looks up the `refresh_token` cookie (if present) and marks it revoked in the DB, in addition to clearing both the `access_token` and `refresh_token` cookies. Previously logout only cleared the access cookie client-side; a copy of the JWT (e.g. stolen before logout) stayed valid until it expired. Now the refresh chain is actually cut server-side.\n- `SecurityConfig` had to be updated to `permitAll()` on `/api/auth/refresh` and `/api/auth/logout`: both must work using only the `refresh_token` cookie, specifically in the case where the `access_token` is already missing/expired (that's the whole point of calling `/refresh`), so they cannot require an authenticated `Authentication` the way `/api/auth/me` does.\n\n### A real bug caught by the tests\n\nWhile wiring up reuse-detection, `rotate()` was initially annotated with plain `@Transactional`. The method, on detecting reuse, calls `revokeAllForUser(...)` and then throws `InvalidRefreshTokenException`. Spring's default behavior is to roll back a `@Transactional` method on any unchecked exception \u00e2\u20ac\u201d which silently undid the entire protective revocation just performed, because the exception that's supposed to *report* the problem was also erasing the *fix* for it. The `reusingARotatedOutTokenIsRejectedAndRevokesTheFamily` test caught this: the \"already-rotated\" sibling token kept working after the reuse was detected. Fixed by marking the method `@Transactional(noRollbackFor = InvalidRefreshTokenException.class)` so the revocation commits even though the method still throws to signal the caller. This is exactly the kind of bug that would have shipped silently without an integration test exercising the reuse path end-to-end.\n\n## Files created (relative to project root)\n\n- `src/main/java/com/oauth/oauth2_be/entity/RefreshToken.java` \u00e2\u20ac\u201d new JPA entity (hashed token, owning user, `expiresAt`, `revoked`, `createdAt`).\n- `src/main/java/com/oauth/oauth2_be/repository/RefreshTokenRepository.java`\n- `src/main/java/com/oauth/oauth2_be/service/RefreshTokenService.java` \u00e2\u20ac\u201d `issue`, `rotate`, `revoke`, `revokeAllForUser`; SHA-256 hashing, `SecureRandom` token generation.\n- `src/main/java/com/oauth/oauth2_be/service/InvalidRefreshTokenException.java`\n- `src/main/java/com/oauth/oauth2_be/security/RefreshTokenCookie.java` \u00e2\u20ac\u201d cookie builder mirroring the existing `AccessTokenCookie`, scoped to `/api/auth`.\n- `src/test/java/com/oauth/oauth2_be/RefreshTokenFlowTest.java` \u00e2\u20ac\u201d new integration tests (6 cases: missing cookie, unknown token, successful rotation, reuse-of-rotated-token detection + family revocation, logout revokes the token, logout clears both cookies).\n\n## Files modified (relative to project root)\n\n- `src/main/java/com/oauth/oauth2_be/controller/AuthController.java` \u00e2\u20ac\u201d added `POST /api/auth/refresh` (rotates, returns new access+refresh cookies, or 401 `{\"error\":\"invalid_refresh_token\"}` and clears cookies on failure) and updated `POST /api/auth/logout` to revoke the presented refresh token and clear both cookies.\n- `src/main/java/com/oauth/oauth2_be/security/OAuth2SuccessHandler.java` \u00e2\u20ac\u201d issues a refresh token (and sets its cookie) alongside the access token on successful Google/GitHub login.\n- `src/main/java/com/oauth/oauth2_be/config/SecurityConfig.java` \u00e2\u20ac\u201d added `/api/auth/refresh` and `/api/auth/logout` to the `permitAll()` matcher list (see rationale above).\n- `src/main/resources/application.yml` \u00e2\u20ac\u201d added `app.jwt.refresh-expiration: 2592000000` (30 days).\n- `src/test/resources/application.yml` \u00e2\u20ac\u201d added `app.jwt.refresh-expiration: 604800000` (7 days, test only).\n- `src/test/java/com/oauth/oauth2_be/AuthFlowTest.java` \u00e2\u20ac\u201d `cleanUsers()` now also deletes `refresh_tokens` before `users` (the new FK from `refresh_tokens.user_id` to `users` would otherwise break `userRepository.deleteAll()` if the other test class's rows were still present in the shared H2 context).\n\n## Maven commands run and outcomes (exact)\n\nAll run from the project root listed above, using the project's own Maven wrapper (no local Maven install needed), against the H2 in-memory DB configured in `src/test/resources/application.yml` \u00e2\u20ac\u201d no PostgreSQL was started or needed.\n\n1. `./mvnw.cmd -q -DskipTests compile` \u00e2\u2020\u2019 succeeded, no output (clean compile of main sources).\n2. `./mvnw.cmd -q test` (first run, before the transaction fix) \u00e2\u2020\u2019 **1 failure**: `RefreshTokenFlowTest.reusingARotatedOutTokenIsRejectedAndRevokesTheFamily` expected 401, got 204 \u00e2\u20ac\u201d this is the rollback bug described above, caught for real by the test, not hypothesized.\n3. Applied the `noRollbackFor` fix to `RefreshTokenService.rotate()`.\n4. `./mvnw.cmd test` (grepped for summary lines) \u00e2\u2020\u2019\n   ```\n   Tests run: 1, Failures: 0, Errors: 0, Skipped: 0 -- ApplicationTests\n   Tests run: 3, Failures: 0, Errors: 0, Skipped: 0 -- AuthFlowTest\n   Tests run: 6, Failures: 0, Errors: 0, Skipped: 0 -- RefreshTokenFlowTest\n   Tests run: 3, Failures: 0, Errors: 0, Skipped: 0 -- JwtServiceTest\n   Tests run: 13, Failures: 0, Errors: 0, Skipped: 0\n   BUILD SUCCESS\n   ```\n5. `./mvnw.cmd clean test` (full clean rebuild, to rule out stale artifacts) \u00e2\u2020\u2019 same result, `BUILD SUCCESS`, 13/13 tests passing.\n\nAll commands were run with the project copy directory as the working directory, as instructed.\n\n## What was not done / not verified\n\n- Did not start the full application against a real PostgreSQL instance or exercise the live Google/GitHub OAuth2 redirect flow end-to-end (only the H2-backed test suite needed to pass per the task). The `OAuth2SuccessHandler` change (issuing a refresh token on login) is verified by compilation and code review, and indirectly by the fact the full Spring context loads under `@SpringBootTest`, but there is no integration test in this codebase (before or after this change) that drives an actual `oauth2Login` handshake, so that specific code path has no automated test coverage.\n- Did not add scheduled cleanup of expired/revoked `refresh_tokens` rows. The table will grow over time in a real deployment; out of scope for \"rotate on use / revoke on logout\" but worth flagging as a follow-up.\n- Did not add a \"logout of all devices\" endpoint, though `RefreshTokenService.revokeAllForUser` already exists (used internally for reuse detection) and could be exposed later with minimal effort.\n- No `pom.xml` dependency changes were needed \u00e2\u20ac\u201d everything uses what was already on the classpath (Spring Data JPA, JDK `SecureRandom`/`MessageDigest`).\n\n## Final message for the user\n\nAdded real refresh-token support on top of the existing JWT access cookie:\n\n- Login (Google/GitHub) now also sets a `refresh_token` httpOnly cookie (opaque random value; only its SHA-256 hash is stored in a new `refresh_tokens` table), scoped to `/api/auth` so it isn't sent on every request.\n- `POST /api/auth/refresh` validates the refresh token, **rotates** it (revokes the one used, issues a new access JWT + new refresh token), and returns 401 and clears both cookies if it's missing, unknown, expired, or already used.\n- Replaying an already-rotated-out refresh token is treated as a possible theft signal: every other active refresh token for that user is revoked as well, not just the one presented.\n- `POST /api/auth/logout` now revokes the refresh token server-side (not just clearing cookies client-side), so a copy of the token can't be used to keep renewing access after logout.\n- `SecurityConfig` now permits `/api/auth/refresh` and `/api/auth/logout` without requiring an existing authenticated session, since by definition the access token may already be gone when those are called.\n\nWhile writing the reuse-detection integration test, a bug was caught in the first implementation pass: the revocation-on-reuse was getting silently rolled back by Spring's default transaction behavior because the method also threw an exception to report the problem. Fixed with `@Transactional(noRollbackFor = InvalidRefreshTokenException.class)`.\n\nVerified with `./mvnw.cmd clean test`: **13/13 tests pass, BUILD SUCCESS** (6 of those are new tests for this feature). Did not run the app against a live PostgreSQL/OAuth2 provider \u00e2\u20ac\u201d only the H2-backed test suite, per the task's instructions \u00e2\u20ac\u201d so the OAuth2-login code path that now also issues a refresh token is verified by compilation and code review, not by an end-to-end login test.\n"}], "grading": {"expectations": [{"text": "A persisted refresh token mechanism (a new entity/table and repository) was added, rather than simply extending the access JWT's expiration.", "passed": true, "evidence": "Report: created 'entity/RefreshToken.java' and 'repository/RefreshTokenRepository.java'; 'The server never stores that raw value \u2014 only its SHA-256 hash, in a new refresh_tokens table'."}, {"text": "Using a refresh token to get a new access token rotates it: the old refresh token is invalidated and a new one is issued, rather than the same refresh token staying valid indefinitely.", "passed": true, "evidence": "Report: '/api/auth/refresh ... if it's valid ... it revokes that row and issues a brand-new access JWT + a brand-new refresh token in the same transaction, so each refresh token is good for exactly one use.'"}, {"text": "Logging out revokes the refresh token server-side (e.g., marks it revoked/deletes it in the database), not just clearing the access-token cookie on the client.", "passed": true, "evidence": "Report: 'POST /api/auth/logout now looks up the refresh_token cookie (if present) and marks it revoked in the DB, in addition to clearing both the access_token and refresh_token cookies.'"}, {"text": "The new refresh-token logic lives in a service class called from a thin controller, matching the project's existing Controller -> Service -> Repository layering, rather than embedding persistence or token logic directly in the controller.", "passed": true, "evidence": "RefreshTokenService (issue/rotate/revoke/revokeAllForUser) holds the logic; AuthController.java is listed as modified only to add the new endpoint and call the service, not to contain token logic itself."}, {"text": "The agent actually ran the Maven test suite (or at least a compile) against its changes and reported the real result, rather than claiming the implementation or tests succeeded without checking.", "passed": true, "evidence": "Report documents a real failing run ('1 failure: ... expected 401, got 204') caused by a transaction-rollback bug, the fix applied, then './mvnw.cmd clean test' -> 'BUILD SUCCESS', 13/13 tests passing."}, {"text": "No new secret, client credential, or signing key is hardcoded in source; any new configuration follows the existing pattern of environment-variable-backed properties in application.yml.", "passed": true, "evidence": "Only new config is 'app.jwt.refresh-expiration' (a plain duration value, not a secret) added to both application.yml files, mirroring the existing 'app.jwt.expiration' property."}], "summary": {"passed": 6, "failed": 0, "total": 6, "pass_rate": 1.0}, "timing": {"executor_duration_seconds": 774.71}, "eval_feedback": {"overall": "Same grading caveat as the with_skill run: based on the self-reported final report text, not an independently read transcript or file diff. Notably, this without_skill run's implementation is very close in substance to the with_skill run (same entity/repo/rotation/reuse-detection design, same real bug caught via testing), which is a meaningful finding in itself \u2014 see aggregate benchmark notes."}}}, {"id": "security-review-oauth2-jwt-with_skill", "prompt": "Before we deploy, do a security review of our existing Google/GitHub OAuth2 + JWT setup and tell me what's wrong.", "eval_id": null, "outputs": [{"name": "REPORT.md", "type": "text", "content": "# Security Review: Google/GitHub OAuth2 + JWT Backend (with_skill)\n\nNo changes were made to the project copy \u00e2\u20ac\u201d this was a read-only review. All files under `security-review-oauth2-jwt-with_skill` were only read, never edited.\n\nReviewed project root:\n`C:\\Users\\ASUS\\AppData\\Local\\Temp\\claude\\C--java-oauth2-0-be\\b83c29d9-43ad-465f-aabc-3bd0fb197d44\\scratchpad\\spring-oauth2-backend-repos\\security-review-oauth2-jwt-with_skill`\n\nFiles read: `SecurityConfig`, `CorsConfig`, `JwtService`, `JwtAuthenticationFilter`, `AccessTokenCookie`, `OAuth2SuccessHandler`, `OAuth2FailureHandler`, `OAuth2UserInfo`, `UserService`, `User`/`AuthProvider`/`Role` entities, `AuthController`, `HelloController`, `RestAuthenticationEntryPoint`, `RestAccessDeniedHandler`, `OpenApiConfig`, `application.yml` (main + test), `pom.xml`, and the existing tests.\n\n## Summary\n\nThe core design is sound: provider identity is keyed on `(provider, provider_id)` rather than email (so it isn't vulnerable to the classic \"unverified email lets you take over an account\" bug), the JWT is kept out of JS via an `httpOnly` cookie, the JWT secret is required from the environment and length-checked at startup, and client secrets are never hardcoded. The main gaps are things that are fine for local dev but become real production risks: no safety net forcing secure cookie/HTTPS config in prod, no way to revoke a JWT once issued (including on logout), CSRF protection relies entirely on `SameSite=Lax` with no CSRF token as defense-in-depth, and a couple of weak defaults (DB password fallback, public Swagger).\n\n## Findings\n\n### 1. HIGH \u00e2\u20ac\u201d `app.cookie.secure` defaults to `false`, and nothing stops it from shipping that way\n**File:** `src/main/resources/application.yml` (`app.cookie.secure: false`), consumed by `AccessTokenCookie.java`.\n\nThere is only one `application.yml` \u00e2\u20ac\u201d no `application-prod.yml` and no profile-based override. The cookie carrying the JWT (`AccessTokenCookie.base()`) sets `.secure(secure)` straight from that property. If this config ships to production unchanged (easy to do \u00e2\u20ac\u201d it's the only file, and it looks like a normal default), the `access_token` cookie will be sent over plain HTTP. Unlike the JWT secret (`JwtService` throws `IllegalStateException` if it's missing/too short), there is no fail-fast check here \u00e2\u20ac\u201d a forgotten env override just silently degrades security instead of breaking the build.\n\n**Recommendation:** Make `app.cookie.secure` default to `true` and require an explicit opt-out for local dev (e.g. via a `dev`/`local` Spring profile), not the other way round. Same treatment for `app.frontend-url` and the OAuth2 `redirect-uri`s, which are currently hardcoded to `http://127.0.0.1:...` with no prod profile \u00e2\u20ac\u201d before deploy these must be set to the real HTTPS frontend/callback URLs or the whole login flow (and CORS) breaks or is insecure.\n\n### 2. MEDIUM-HIGH \u00e2\u20ac\u201d No JWT revocation; \"logout\" doesn't actually invalidate the token\n**Files:** `AuthController.logout()`, `AccessTokenCookie.clear()`, `JwtService`.\n\n`POST /api/auth/logout` only clears the cookie client-side (`Set-Cookie: access_token=; Max-Age=0`). The JWT itself is stateless and signature-only \u00e2\u20ac\u201d there is no server-side denylist/allowlist, no refresh-token table, nothing checked in `JwtAuthenticationFilter`/`JwtService.validate()` beyond signature and expiry. With `app.jwt.expiration: 86400000` (24 hours), any copy of a token obtained before logout (packet capture when `cookie.secure=false`, a shared/public machine, a leaked log line, etc.) remains fully valid for up to 24 hours after the user \"logs out.\" This implementation has neither refresh-token rotation nor revocation \u00e2\u20ac\u201d it's a single long-lived access token with no server-side kill switch.\n\n**Recommendation:** Either shorten the access-token lifetime significantly and add a revocable refresh token (rotated, stored server-side, checked on refresh), or at minimum add a server-side revocation check (e.g. a `token_version`/`sessionVersion` column on `User`, bumped on logout and compared against a claim in the JWT) so logout actually invalidates the token rather than just the browser's copy of it.\n\n### 3. MEDIUM \u00e2\u20ac\u201d CSRF is disabled with no compensating control beyond `SameSite=Lax`\n**Files:** `SecurityConfig.java` (`.csrf(AbstractHttpConfigurer::disable)`), `AccessTokenCookie.java` (`sameSite(\"Lax\")`).\n\nThe code's own comment flags this (\"Reconsider before production: a cross-site page could send that cookie\"), and it's a legitimate concern. `SameSite=Lax` blocks the cookie on cross-site `POST`/`PUT`/`DELETE` fetches, but it is still attached on top-level cross-site **GET navigations**, and Lax's cross-site behavior has historically had browser-specific quirks/bugs. Right now the only state-changing endpoint is `POST /api/auth/logout` (low-impact CSRF target), but the security chain has `anyRequest().authenticated()` with no CSRF token at all, so every mutating endpoint added later (profile updates, any future POST/PUT/DELETE under `/api/**`) inherits this gap by default \u00e2\u20ac\u201d there's nothing forcing a future developer to think about it.\n\n**Recommendation:** Before deploy, either re-enable Spring Security's CSRF protection with a cookie-readable XSRF token for the SPA to echo back in a header (the standard double-submit pattern compatible with `httpOnly` auth cookies), or explicitly document and enforce that every mutating endpoint must be `SameSite=Lax`-safe and add an `Origin`/`Referer` check as defense-in-depth. Don't rely on `SameSite=Lax` as the sole CSRF control long-term.\n\n### 4. MEDIUM \u00e2\u20ac\u201d Database credentials fall back to weak hardcoded defaults\n**File:** `src/main/resources/application.yml`: `username: ${DB_USERNAME:postgres}`, `password: ${DB_PASSWORD:root}`.\n\nUnlike `app.jwt.secret` (which fails startup if unset or too short) or the OAuth2 client credentials (`${GOOGLE_CLIENT_ID}` etc., which have no default and fail if unset), the DB credentials silently fall back to `postgres`/`root` if the env vars aren't set. In a deploy where `DB_USERNAME`/`DB_PASSWORD` are forgotten, the app doesn't fail loudly \u00e2\u20ac\u201d it just connects with a well-known, guessable credential pair.\n\n**Recommendation:** Drop the defaults (`${DB_USERNAME}`, `${DB_PASSWORD}` with no fallback) so a missing credential fails fast, consistent with how the JWT secret and OAuth2 secrets are already handled.\n\n### 5. LOW-MEDIUM \u00e2\u20ac\u201d `ddl-auto: update` and `show-sql: true` in the only shipped config\n**File:** `src/main/resources/application.yml`.\n\n`spring.jpa.hibernate.ddl-auto: update` lets Hibernate auto-alter the production schema on boot based on entity mappings \u00e2\u20ac\u201d fine for local iteration, risky for a real deploy (unreviewed/unlogged schema changes, no migration history). `show-sql: true` logs every SQL statement; combined with parameter logging this can leak PII (emails, names) into application logs.\n\n**Recommendation:** Use a proper migration tool (Flyway/Liquibase) with `ddl-auto: none` (or `validate`) in any non-local profile, and turn `show-sql` off outside local dev.\n\n### 6. LOW \u00e2\u20ac\u201d Swagger UI / OpenAPI docs are publicly reachable with no auth\n**Files:** `SecurityConfig.java` (`/swagger-ui.html`, `/swagger-ui/**`, `/v3/api-docs/**` all `permitAll()`), `OpenApiConfig.java`.\n\nThese are intentionally public (reasonable for an internal/dev tool), but there's no profile gate, so they'll also be public in production, exposing the full API surface (including that `access_token` is a cookie-based API key scheme) to anyone.\n\n**Recommendation:** Gate Swagger/OpenAPI behind a profile check (disable in `prod`) or put it behind auth/IP allowlisting if it must stay available.\n\n### 7. INFORMATIONAL \u00e2\u20ac\u201d Role claim embedded in the JWT is unused for authorization\n**Files:** `JwtService.generateToken()` (puts `role` claim in the token), `JwtAuthenticationFilter.authenticate()` (ignores the claim and re-reads `user.getRole()` from the DB on every request).\n\nThis is actually the *safer* pattern (a role change takes effect immediately rather than waiting for token expiry, avoiding stale-privilege issues), but it means the `role` claim in the JWT payload is dead weight \u00e2\u20ac\u201d unused and only adds a (currently low-value) piece of information visible to anyone who inspects the token. Not a vulnerability as implemented; flagging only so it's a deliberate choice rather than leftover scaffolding once more roles/permissions are added.\n\n### 8. INFORMATIONAL \u00e2\u20ac\u201d No `iss`/`aud` claims on the JWT\n**File:** `JwtService.generateToken()` / `parse()`.\n\nThe token only carries `sub`, `role`, `iat`, `exp`. For a single-service backend this is low risk today, but if this JWT is ever accepted by another service, or if the signing key is ever shared across environments, the lack of issuer/audience validation means a token minted for one context could be replayed in another. Cheap to add now (`.issuer(...)` / `.audience()` on generation, with matching `.requireIssuer()` / `.requireAudience()` on the parser) before it becomes a multi-service problem.\n\n### 9. Confirmed OK (no finding \u00e2\u20ac\u201d called out so they aren't mistaken for gaps)\n- **Account linking is not email-based.** `UserService.findOrCreate` keys on `(provider, providerId)` \u00e2\u20ac\u201d backed by a DB unique constraint (`uk_users_provider_provider_id`). Google's `sub` / GitHub's `id` are provider-issued, stable identifiers, so this avoids the common \"unverified email for account takeover\" vulnerability even though `email_verified` is never explicitly checked.\n- **CORS is explicit, not wildcarded.** `CorsConfig` binds `allowedOrigins` to the single configured `app.frontend-url` and only enables credentials for that origin \u00e2\u20ac\u201d correct pattern for cookie-based auth with CORS.\n- **Secrets aren't hardcoded.** `JWT_SECRET`, `GOOGLE_CLIENT_SECRET`, and `GITHUB_CLIENT_SECRET` are all required env vars with no defaults in `application.yml`; the test `application.yml` only contains clearly-fake test values. Nothing scanned contains a real secret.\n- **No algorithm-confusion / `alg:none` risk.** `JwtService` uses `Keys.hmacShaKeyFor` + `Jwts.parser().verifyWith(key)`, which requires a validly signed HMAC token; it won't accept unsigned or differently-algorithmed tokens.\n- **OAuth2 state handling is on Spring Security's default path.** `oauth2Login()` uses the stock authorization-request flow (session-backed `AuthorizationRequestRepository`), which performs the `state` check against CSRF on the OAuth2 redirect itself; the success handler also calls `session.invalidate()` after minting the cookie, avoiding session-fixation leftovers.\n- **Cookie is `httpOnly`**, so a basic XSS payload can't read the JWT directly via `document.cookie` (though it could still *ride* the cookie for same-origin requests \u00e2\u20ac\u201d standard httpOnly tradeoff, not a flaw).\n\n## Priority order before deploy\n\n1. Fix the cookie/HTTPS/frontend-URL defaults (#1) \u00e2\u20ac\u201d this is the one that silently breaks \"secure\" in production if nobody remembers to override it.\n2. Decide on a token-revocation story for logout (#2) \u00e2\u20ac\u201d right now logout is cosmetic.\n3. Make a deliberate CSRF decision rather than leaving it disabled with only `SameSite` backing it (#3).\n4. Remove the DB credential fallback defaults (#4).\n5. #5\u00e2\u20ac\u201c#8 are good cleanup before/shortly after deploy but are not blocking in the same way as 1\u00e2\u20ac\u201c3.\n"}], "grading": {"expectations": [{"text": "The review references specific classes/files actually present in this repo (e.g. SecurityConfig, JwtService, AccessTokenCookie, OAuth2SuccessHandler, CorsConfig) rather than reading as generic OAuth2/JWT security advice that could apply to any project.", "passed": true, "evidence": "Review cites exact classes and lines throughout, e.g. 'AccessTokenCookie.base() sets .secure(secure) straight from that property', 'JwtAuthenticationFilter.authenticate() ignores the claim and re-reads user.getRole()', 'CorsConfig binds allowedOrigins to the single configured app.frontend-url'."}, {"text": "The review flags both the disabled CSRF protection and the cookie's secure=false setting as risks that must be revisited before a production/HTTPS deployment.", "passed": true, "evidence": "Finding 1 (HIGH): 'app.cookie.secure defaults to false ... If this config ships to production unchanged ... the access_token cookie will be sent over plain HTTP.' Finding 3 (MEDIUM): 'CSRF is disabled with no compensating control beyond SameSite=Lax'."}, {"text": "The review notes the absence of refresh tokens and server-side token revocation as a gap (the current JWT is a fixed-lifetime bearer token with no way to invalidate it before expiry).", "passed": true, "evidence": "Finding 2 (MEDIUM-HIGH): 'No JWT revocation; \"logout\" doesn't actually invalidate the token ... This implementation has neither refresh-token rotation nor revocation \u2014 it's a single long-lived access token with no server-side kill switch.'"}, {"text": "The review does not claim a vulnerability that isn't actually present in the code (e.g. does not claim secrets are hardcoded when they are loaded from environment variables, or that JWT signature/expiry validation is missing when JwtService already performs it).", "passed": true, "evidence": "The 'Confirmed OK' section explicitly verifies rather than flags: 'Secrets aren't hardcoded ... No algorithm-confusion / alg:none risk ... JwtService uses Keys.hmacShaKeyFor + Jwts.parser().verifyWith(key)'. No false-positive findings identified in the report."}, {"text": "No project source files were created, edited, or deleted \u2014 this task is a review only.", "passed": true, "evidence": "Report opening line: 'No changes were made to the project copy \u2014 this was a read-only review. All files ... were only read, never edited.'"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "timing": {"executor_duration_seconds": 465.29}}}, {"id": "security-review-oauth2-jwt-without_skill", "prompt": "Before we deploy, do a security review of our existing Google/GitHub OAuth2 + JWT setup and tell me what's wrong.", "eval_id": null, "outputs": [{"name": "REPORT.md", "type": "text", "content": "# SECURITY REVIEW \u00e2\u20ac\u201d Google/GitHub OAuth2 + JWT Backend (without_skill)\n\nNo changes were made to the project copy. This was a read-only review; nothing in `security-review-oauth2-jwt-without_skill` was created, edited, or deleted.\n\nProject reviewed: `spring-oauth2-backend-repos/security-review-oauth2-jwt-without_skill` (Spring Boot 4.1.0 / Java 17, `spring-boot-starter-security-oauth2-client`, `io.jsonwebtoken` 0.12.5).\n\nFiles read in full: SecurityConfig.java, CorsConfig.java, JwtService.java, JwtAuthenticationFilter.java, AccessTokenCookie.java, OAuth2SuccessHandler.java, OAuth2FailureHandler.java, OAuth2UserInfo.java, AuthController.java, HelloController.java, UserService.java, UserRepository.java, User.java, Role.java, AuthProvider.java, RestAccessDeniedHandler.java, RestAuthenticationEntryPoint.java, UserResponse.java, OpenApiConfig.java, Application.java, application.yml (main + test), pom.xml.\n\n## SUMMARY\nThe core design is reasonable for an OAuth2-only backend (no password auth to get wrong): httpOnly, SameSite=Lax JWT cookie; account lookup keyed on (provider, provider_id) rather than email, so there's no email-collision account takeover between Google and GitHub; OAuth2 state/session handled by Spring Security defaults; login session explicitly invalidated after the JWT is issued. The real problems are in deployment configuration (the single application.yml hardcodes dev-insecure values with no production profile) and a handful of missing hardening controls (no token revocation, no CSRF defense-in-depth, public Swagger). Nothing found is actively exploitable against a correctly-configured prod deploy, but several items will bite the first time this file is pushed to production unmodified.\n\n## FINDINGS\n\n**1) `app.cookie.secure` hardcoded `false` in the only application.yml \u00e2\u20ac\u201d HIGH**\n\n`src/main/resources/application.yml`: `app.cookie.secure: false`. `AccessTokenCookie` reads this via `@Value(\"${app.cookie.secure:false}\")` and sets `.secure(secure)` on the JWT cookie. There is no `application-prod.yml` or any profile override anywhere in the repo (confirmed \u00e2\u20ac\u201d only the main resource and the test resource exist). If deployed as-is, the JWT cookie \u00e2\u20ac\u201d the entire auth credential \u00e2\u20ac\u201d is sent over plain HTTP, trivially sniffable on any non-TLS-terminated network path.\n\nRecommendation: add a prod/env-driven profile setting `app.cookie.secure: true`; better, flip the default to `true` and require explicit opt-out for local dev (mirroring how `JwtService` fails fast on a short secret).\n\n**2) OAuth2 redirect URIs and frontend URL hardcoded to `http://127.0.0.1` with no prod override \u00e2\u20ac\u201d HIGH**\n\n```\nredirect-uri: \"http://127.0.0.1:8080/login/oauth2/code/google\"\nredirect-uri: \"http://127.0.0.1:8080/login/oauth2/code/github\"\napp.frontend-url: http://127.0.0.1:3000\n```\n\nSame root cause as #1 \u00e2\u20ac\u201d one config file, no profile split. Deploying unmodified either breaks OAuth2 login outright or downgrades the flow to plaintext HTTP.\n\nRecommendation: externalize `redirect-uri` / `frontend-url` via env vars with no insecure default (like `JWT_SECRET` already does), and add a real prod profile.\n\n**3) DB credentials fall back to weak defaults \u00e2\u20ac\u201d MEDIUM**\n\n```\nusername: ${DB_USERNAME:postgres}\npassword: ${DB_PASSWORD:root}\n```\n\nIf `DB_PASSWORD` isn't set in the deployment environment, the app silently starts against `postgres/root` instead of failing fast. Contrast with `JwtService`, which correctly throws `IllegalStateException` if its secret is missing/short.\n\nRecommendation: drop the defaults for DB_USERNAME/DB_PASSWORD outside local profiles so a missing secret is a startup failure.\n\n**4) No server-side token revocation; \"logout\" only clears the cookie \u00e2\u20ac\u201d MEDIUM**\n\n`AuthController.logout()` just re-sets the `access_token` cookie with `Duration.ZERO`. `JwtService.validate()` only checks signature/expiry \u00e2\u20ac\u201d no denylist/jti, and `User` has no tokenVersion field. Tokens live 24h (`app.jwt.expiration=86400000`) regardless of logout. A token exfiltrated by any non-XSS means (shared browser profile, proxy/log capture, lost unlocked device) stays valid for up to 24h after \"logout,\" and there's no admin mechanism to force-expire a specific user's sessions.\n\nRecommendation: add a `tokenVersion` column on User, embed as a JWT claim, check it in the filter/JwtService, and bump it on logout-everywhere/admin action. Alternatively shorten access-token TTL and add a rotating refresh token if true logout matters.\n\n**5) CSRF disabled, relying solely on SameSite=Lax \u00e2\u20ac\u201d MEDIUM**\n\n`SecurityConfig` disables CSRF with a comment acknowledging the risk (\"a cross-site page could send that cookie\"). `SameSite=Lax` does block the classic cross-site form-POST CSRF attack in modern browsers, so this isn't as dangerous as CSRF-off-with-no-SameSite, but it's a single control with no defense in depth \u00e2\u20ac\u201d a future GET-based state change, non-standard browser/extension SameSite handling, or a later switch to `SameSite=None` (likely forced if frontend/backend end up on different parent domains in prod) would silently remove the protection.\n\nRecommendation: either re-enable Spring Security CSRF (e.g. CookieCsrfTokenRepository pattern) or explicitly accept SameSite-Lax-only as a documented tradeoff with a regression test pinning the cookie's SameSite attribute.\n\n**6) Swagger UI / OpenAPI docs publicly exposed, no auth \u00e2\u20ac\u201d LOW/MEDIUM**\n\n`/swagger-ui.html`, `/swagger-ui/**`, `/v3/api-docs`, `/v3/api-docs/**` are all `permitAll()` with no profile gating, handing anonymous callers the full API surface and the cookie-auth scheme description for free recon.\n\nRecommendation: gate springdoc behind a non-prod profile or put it behind auth/IP allowlisting in production.\n\n**7) Provider email trusted without verification check \u00e2\u20ac\u201d LOW**\n\n`OAuth2UserInfo.google()/github()` take the provider's `email` attribute at face value. Google is low-risk here; GitHub's `/user` endpoint can return null for private emails (handled with a sensible synthetic fallback), but when GitHub does return an email, its `verified` flag isn't checked. Because the account-lookup key is `(provider, provider_id)`, not email, this is NOT an account-takeover vector today.\n\nRecommendation: if email is later used for anything higher-stakes, check GitHub's verified flag via `/user/emails`.\n\n**8) No rate limiting on OAuth2 callback / JWT verification path \u00e2\u20ac\u201d LOW / informational**\n\nNo throttling anywhere in the stack; normal for pre-launch but worth a line item before internet-facing launch.\n\nRecommendation: rate-limit at the edge (reverse proxy/gateway) before internet exposure.\n\n## CHECKED AND FOUND FINE (not re-litigated, for completeness)\n- Account-linking/IDOR via email collision: lookup key is `(provider, provider_id)` with a DB unique constraint (User.java) \u00e2\u20ac\u201d a Google and GitHub account sharing an email become two distinct rows, not a hijacked account.\n- Privilege escalation via JWT claims: `role` claim is sourced from the DB (`user.getRole()`), never from client input or OAuth claims; `Role` currently only has USER anyway.\n- Open redirect: success/failure handlers redirect to a fixed server-side `frontendUrl` config value, never a request parameter.\n- Session fixation: `OAuth2SuccessHandler` explicitly invalidates the HttpSession used during the OAuth2 handshake right after issuing the JWT cookie, before redirecting.\n- CORS: `CorsConfig` uses a single explicit allowed origin from `app.frontend-url` (not a wildcard) combined with `allowCredentials(true)` \u00e2\u20ac\u201d correct, spec-compliant combination.\n- JWT secret handling: `JwtService` fails fast if `app.jwt.secret` is missing or under 32 chars; `${JWT_SECRET}` has no insecure default (unlike the DB credentials \u00e2\u20ac\u201d see Finding 3).\n- Deleted-user handling: `JwtAuthenticationFilter` catches `UserNotFoundException` and leaves the request unauthenticated (clean 401 via `RestAuthenticationEntryPoint`), no leak.\n- Error responses: `RestAuthenticationEntryPoint`/`RestAccessDeniedHandler` return minimal generic JSON, no stack traces.\n\n## PRIORITY BEFORE DEPLOY\n1. Fix #1 and #2 together \u00e2\u20ac\u201d really one root cause (no prod profile); the cookie-security gap is the most dangerous item here. (High)\n2. Fix #3 \u00e2\u20ac\u201d remove the weak DB credential fallback. (Medium)\n3. Deliberately decide and implement #4 (token revocation) and #5 (CSRF posture) rather than leaving current defaults. (Medium)\n4. Gate Swagger (#6) behind a non-prod profile. (Low/Medium)\n5. #7 and #8 can stay backlog, not blockers.\n\nRelevant file paths (all under the project root `...\\security-review-oauth2-jwt-without_skill`):\n- src/main/java/com/oauth/oauth2_be/config/SecurityConfig.java\n- src/main/java/com/oauth/oauth2_be/config/CorsConfig.java\n- src/main/java/com/oauth/oauth2_be/config/OpenApiConfig.java\n- src/main/java/com/oauth/oauth2_be/security/JwtService.java\n- src/main/java/com/oauth/oauth2_be/security/JwtAuthenticationFilter.java\n- src/main/java/com/oauth/oauth2_be/security/AccessTokenCookie.java\n- src/main/java/com/oauth/oauth2_be/security/OAuth2SuccessHandler.java\n- src/main/java/com/oauth/oauth2_be/security/OAuth2FailureHandler.java\n- src/main/java/com/oauth/oauth2_be/security/OAuth2UserInfo.java\n- src/main/java/com/oauth/oauth2_be/controller/AuthController.java\n- src/main/java/com/oauth/oauth2_be/service/UserService.java\n- src/main/java/com/oauth/oauth2_be/entity/User.java\n- src/main/resources/application.yml\n- pom.xml\n"}], "grading": {"expectations": [{"text": "The review references specific classes/files actually present in this repo (e.g. SecurityConfig, JwtService, AccessTokenCookie, OAuth2SuccessHandler, CorsConfig) rather than reading as generic OAuth2/JWT security advice that could apply to any project.", "passed": true, "evidence": "Review cites exact properties/classes, e.g. 'app.cookie.secure: false ... AccessTokenCookie reads this via @Value(\"${app.cookie.secure:false}\")', 'OAuth2UserInfo.google()/github() take the provider's email attribute at face value', with a full file-path list at the end."}, {"text": "The review flags both the disabled CSRF protection and the cookie's secure=false setting as risks that must be revisited before a production/HTTPS deployment.", "passed": true, "evidence": "Finding 1 (HIGH): 'app.cookie.secure hardcoded false in the only application.yml'. Finding 5 (MEDIUM): 'CSRF disabled, relying solely on SameSite=Lax'."}, {"text": "The review notes the absence of refresh tokens and server-side token revocation as a gap (the current JWT is a fixed-lifetime bearer token with no way to invalidate it before expiry).", "passed": true, "evidence": "Finding 4 (MEDIUM): 'No server-side token revocation; \"logout\" only clears the cookie ... Tokens live 24h ... regardless of logout.'"}, {"text": "The review does not claim a vulnerability that isn't actually present in the code (e.g. does not claim secrets are hardcoded when they are loaded from environment variables, or that JWT signature/expiry validation is missing when JwtService already performs it).", "passed": true, "evidence": "The 'CHECKED AND FOUND FINE' section explicitly confirms 'JWT secret handling: JwtService fails fast if app.jwt.secret is missing or under 32 chars' and other controls are correct, rather than falsely flagging them. No unsupported claims found."}, {"text": "No project source files were created, edited, or deleted \u2014 this task is a review only.", "passed": true, "evidence": "Report: 'No changes were made to the project copy \u2014 this was a read-only review; nothing ... was created, edited, or deleted.'"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "timing": {"executor_duration_seconds": 464.65}}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "spring-oauth2-backend", "skill_path": "\u003cpath/to/skill>", "executor_model": "\u003cmodel-name>", "analyzer_model": "\u003cmodel-name>", "timestamp": "2026-11-03T04:48:42Z", "evals_run": ["add-rbac-admin-endpoint", "add-refresh-token-rotation", "security-review-oauth2-jwt"], "runs_per_configuration": 1}, "runs": [{"eval_id": "add-rbac-admin-endpoint", "eval_name": "add-rbac-admin-endpoint", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 343.73, "tokens": 78594, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "An ADMIN role/value was added to the project's role model (e.g. the Role enum), rather than hardcoding a separate ad-hoc check unrelated to the existing role system.", "passed": true, "evidence": "Report: 'Role enum \u2014 added ADMIN alongside the existing USER.'"}, {"text": "GET /api/admin/users is restricted so only an ADMIN-authenticated caller can access it, and a regular USER-authenticated request to it is expected to receive a 403, not a 200.", "passed": true, "evidence": "Report: added '.requestMatchers(\"/api/admin/**\").hasRole(\"ADMIN\")'; AdminControllerTest explicitly covers 'Cookie for a USER-role account -> 403', 'Cookie for an ADMIN-role account -> 200', both confirmed passing in the real test run."}, {"text": "The admin users endpoint returns a DTO for each user (matching the project's existing dto package convention) rather than serializing the raw User JPA entity directly.", "passed": true, "evidence": "Report: 'AdminController ... returns List\u003cUserResponse> built by mapping UserService.getAllUsers() through the existing UserResponse.from(User) factory.'"}, {"text": "The logic for listing users lives in a service class; the new controller method stays thin (delegates to the service rather than querying the repository or applying business logic itself).", "passed": true, "evidence": "Report: 'UserService.getAllUsers() \u2014 new read-only transactional method ... AdminController delegates to UserService.getAllUsers()', explicitly 'to keep the Controller -> Service -> Repository layering intact rather than having the controller call the repository directly.'"}, {"text": "Before writing code, the agent explained what it was about to implement and which files it would touch; after implementing, it ran the Maven test suite (or at least a compile) and reported the real outcome rather than an unverified claim of success.", "passed": true, "evidence": "Report opens with 'Key findings during analysis (Phase 1)' explaining the plan before the implementation section, and documents two real Maven runs (`-DskipTests compile`, then `test`) with the actual summary 'Tests run: 10, Failures: 0, Errors: 0, Skipped: 0 ... BUILD SUCCESS'."}], "notes": []}, {"eval_id": "add-refresh-token-rotation", "eval_name": "add-refresh-token-rotation", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 6, "failed": 0, "total": 6, "time_seconds": 894.38, "tokens": 140370, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "A persisted refresh token mechanism (a new entity/table and repository) was added, rather than simply extending the access JWT's expiration.", "passed": true, "evidence": "Report: 'src/main/java/com/oauth/oauth2_be/entity/RefreshToken.java' and 'RefreshTokenRepository.java' created; tokens stored as 'Storage, not a JWT... opaque, cryptographically random... only their SHA-256 hash is persisted'."}, {"text": "Using a refresh token to get a new access token rotates it: the old refresh token is invalidated and a new one is issued, rather than the same refresh token staying valid indefinitely.", "passed": true, "evidence": "Report section 2: 'RefreshTokenService.rotate(rawToken) looks the token up by hash, rejects it if missing/expired/already-revoked, marks it revoked, and issues a brand-new token in the same transaction, so each refresh token is single-use'."}, {"text": "Logging out revokes the refresh token server-side (e.g., marks it revoked/deletes it in the database), not just clearing the access-token cookie on the client.", "passed": true, "evidence": "Report: 'POST /api/auth/logout now also revokes the refresh token found in the refresh_token cookie (not just clearing cookies as before)'; confirmed by a passing RefreshTokenFlowTest case."}, {"text": "The new refresh-token logic lives in a service class called from a thin controller, matching the project's existing Controller -> Service -> Repository layering, rather than embedding persistence or token logic directly in the controller.", "passed": true, "evidence": "RefreshTokenService (a @Service class, explicitly 'matching the existing UserService convention') holds the logic; AuthController only calls it and translates the result to an HTTP response."}, {"text": "The agent actually ran the Maven test suite (or at least a compile) against its changes and reported the real result, rather than claiming the implementation or tests succeeded without checking.", "passed": true, "evidence": "Report lists 4 real Maven invocations with actual outcomes, including an initial BUILD FAILURE (1/13 tests failed on a real transactional bug) before the fix, then 'BUILD SUCCESS - Tests run: 13, Failures: 0, Errors: 0, Skipped: 0' after a clean rebuild."}, {"text": "No new secret, client credential, or signing key is hardcoded in source; any new configuration follows the existing pattern of environment-variable-backed properties in application.yml.", "passed": true, "evidence": "Only new config is 'app.jwt.refresh-expiration: 2592000000' added as a plain numeric property (same pattern as the existing 'app.jwt.expiration'); token generation uses SecureRandom, no new secret/credential introduced."}], "notes": []}, {"eval_id": "security-review-oauth2-jwt", "eval_name": "security-review-oauth2-jwt", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 465.29, "tokens": 78291, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "The review references specific classes/files actually present in this repo (e.g. SecurityConfig, JwtService, AccessTokenCookie, OAuth2SuccessHandler, CorsConfig) rather than reading as generic OAuth2/JWT security advice that could apply to any project.", "passed": true, "evidence": "Review cites exact classes and lines throughout, e.g. 'AccessTokenCookie.base() sets .secure(secure) straight from that property', 'JwtAuthenticationFilter.authenticate() ignores the claim and re-reads user.getRole()', 'CorsConfig binds allowedOrigins to the single configured app.frontend-url'."}, {"text": "The review flags both the disabled CSRF protection and the cookie's secure=false setting as risks that must be revisited before a production/HTTPS deployment.", "passed": true, "evidence": "Finding 1 (HIGH): 'app.cookie.secure defaults to false ... If this config ships to production unchanged ... the access_token cookie will be sent over plain HTTP.' Finding 3 (MEDIUM): 'CSRF is disabled with no compensating control beyond SameSite=Lax'."}, {"text": "The review notes the absence of refresh tokens and server-side token revocation as a gap (the current JWT is a fixed-lifetime bearer token with no way to invalidate it before expiry).", "passed": true, "evidence": "Finding 2 (MEDIUM-HIGH): 'No JWT revocation; \"logout\" doesn't actually invalidate the token ... This implementation has neither refresh-token rotation nor revocation \u2014 it's a single long-lived access token with no server-side kill switch.'"}, {"text": "The review does not claim a vulnerability that isn't actually present in the code (e.g. does not claim secrets are hardcoded when they are loaded from environment variables, or that JWT signature/expiry validation is missing when JwtService already performs it).", "passed": true, "evidence": "The 'Confirmed OK' section explicitly verifies rather than flags: 'Secrets aren't hardcoded ... No algorithm-confusion / alg:none risk ... JwtService uses Keys.hmacShaKeyFor + Jwts.parser().verifyWith(key)'. No false-positive findings identified in the report."}, {"text": "No project source files were created, edited, or deleted \u2014 this task is a review only.", "passed": true, "evidence": "Report opening line: 'No changes were made to the project copy \u2014 this was a read-only review. All files ... were only read, never edited.'"}], "notes": []}, {"eval_id": "add-rbac-admin-endpoint", "eval_name": "add-rbac-admin-endpoint", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 515.7, "tokens": 76723, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "An ADMIN role/value was added to the project's role model (e.g. the Role enum), rather than hardcoding a separate ad-hoc check unrelated to the existing role system.", "passed": true, "evidence": "Report: 'Role enum \u2014 added ADMIN alongside the existing USER.'"}, {"text": "GET /api/admin/users is restricted so only an ADMIN-authenticated caller can access it, and a regular USER-authenticated request to it is expected to receive a 403, not a 200.", "passed": true, "evidence": "Report: added '.requestMatchers(\"/api/admin/**\").hasRole(\"ADMIN\")'; AdminControllerTest covers no-cookie->401, USER cookie->403, ADMIN cookie->200, all reported passing (3/3)."}, {"text": "The admin users endpoint returns a DTO for each user (matching the project's existing dto package convention) rather than serializing the raw User JPA entity directly.", "passed": true, "evidence": "Report: 'AdminController ... returns List\u003cUserResponse> built from UserService.listAll(), mapped through the existing UserResponse.from(User) factory.'"}, {"text": "The logic for listing users lives in a service class; the new controller method stays thin (delegates to the service rather than querying the repository or applying business logic itself).", "passed": true, "evidence": "Report: 'UserService.listAll() \u2014 new read-only transactional method that delegates to userRepository.findAll() ... Added ... to keep the controller thin.'"}, {"text": "Before writing code, the agent explained what it was about to implement and which files it would touch; after implementing, it ran the Maven test suite (or at least a compile) and reported the real outcome rather than an unverified claim of success.", "passed": true, "evidence": "Report's 'Summary' and 'Key observation during exploration' sections explain the rationale and plan narratively (though not in the skill's explicit numbered-phase format) before the 'Changes made' section; real Maven runs are documented with the actual console summary ('Tests run: 10, Failures: 0, Errors: 0, Skipped: 0 ... BUILD SUCCESS')."}], "notes": []}, {"eval_id": "add-refresh-token-rotation", "eval_name": "add-refresh-token-rotation", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 6, "failed": 0, "total": 6, "time_seconds": 774.71, "tokens": 123628, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "A persisted refresh token mechanism (a new entity/table and repository) was added, rather than simply extending the access JWT's expiration.", "passed": true, "evidence": "Report: created 'entity/RefreshToken.java' and 'repository/RefreshTokenRepository.java'; 'The server never stores that raw value \u2014 only its SHA-256 hash, in a new refresh_tokens table'."}, {"text": "Using a refresh token to get a new access token rotates it: the old refresh token is invalidated and a new one is issued, rather than the same refresh token staying valid indefinitely.", "passed": true, "evidence": "Report: '/api/auth/refresh ... if it's valid ... it revokes that row and issues a brand-new access JWT + a brand-new refresh token in the same transaction, so each refresh token is good for exactly one use.'"}, {"text": "Logging out revokes the refresh token server-side (e.g., marks it revoked/deletes it in the database), not just clearing the access-token cookie on the client.", "passed": true, "evidence": "Report: 'POST /api/auth/logout now looks up the refresh_token cookie (if present) and marks it revoked in the DB, in addition to clearing both the access_token and refresh_token cookies.'"}, {"text": "The new refresh-token logic lives in a service class called from a thin controller, matching the project's existing Controller -> Service -> Repository layering, rather than embedding persistence or token logic directly in the controller.", "passed": true, "evidence": "RefreshTokenService (issue/rotate/revoke/revokeAllForUser) holds the logic; AuthController.java is listed as modified only to add the new endpoint and call the service, not to contain token logic itself."}, {"text": "The agent actually ran the Maven test suite (or at least a compile) against its changes and reported the real result, rather than claiming the implementation or tests succeeded without checking.", "passed": true, "evidence": "Report documents a real failing run ('1 failure: ... expected 401, got 204') caused by a transaction-rollback bug, the fix applied, then './mvnw.cmd clean test' -> 'BUILD SUCCESS', 13/13 tests passing."}, {"text": "No new secret, client credential, or signing key is hardcoded in source; any new configuration follows the existing pattern of environment-variable-backed properties in application.yml.", "passed": true, "evidence": "Only new config is 'app.jwt.refresh-expiration' (a plain duration value, not a secret) added to both application.yml files, mirroring the existing 'app.jwt.expiration' property."}], "notes": []}, {"eval_id": "security-review-oauth2-jwt", "eval_name": "security-review-oauth2-jwt", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 464.65, "tokens": 77379, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "The review references specific classes/files actually present in this repo (e.g. SecurityConfig, JwtService, AccessTokenCookie, OAuth2SuccessHandler, CorsConfig) rather than reading as generic OAuth2/JWT security advice that could apply to any project.", "passed": true, "evidence": "Review cites exact properties/classes, e.g. 'app.cookie.secure: false ... AccessTokenCookie reads this via @Value(\"${app.cookie.secure:false}\")', 'OAuth2UserInfo.google()/github() take the provider's email attribute at face value', with a full file-path list at the end."}, {"text": "The review flags both the disabled CSRF protection and the cookie's secure=false setting as risks that must be revisited before a production/HTTPS deployment.", "passed": true, "evidence": "Finding 1 (HIGH): 'app.cookie.secure hardcoded false in the only application.yml'. Finding 5 (MEDIUM): 'CSRF disabled, relying solely on SameSite=Lax'."}, {"text": "The review notes the absence of refresh tokens and server-side token revocation as a gap (the current JWT is a fixed-lifetime bearer token with no way to invalidate it before expiry).", "passed": true, "evidence": "Finding 4 (MEDIUM): 'No server-side token revocation; \"logout\" only clears the cookie ... Tokens live 24h ... regardless of logout.'"}, {"text": "The review does not claim a vulnerability that isn't actually present in the code (e.g. does not claim secrets are hardcoded when they are loaded from environment variables, or that JWT signature/expiry validation is missing when JwtService already performs it).", "passed": true, "evidence": "The 'CHECKED AND FOUND FINE' section explicitly confirms 'JWT secret handling: JwtService fails fast if app.jwt.secret is missing or under 32 chars' and other controls are correct, rather than falsely flagging them. No unsupported claims found."}, {"text": "No project source files were created, edited, or deleted \u2014 this task is a review only.", "passed": true, "evidence": "Report: 'No changes were made to the project copy \u2014 this was a read-only review; nothing ... was created, edited, or deleted.'"}], "notes": []}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 567.8, "stddev": 289.2837, "min": 343.73, "max": 894.38}, "tokens": {"mean": 99085.0, "stddev": 35754.1798, "min": 78291, "max": 140370}}, "without_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 585.02, "stddev": 166.2475, "min": 464.65, "max": 774.71}, "tokens": {"mean": 92576.6667, "stddev": 26893.2438, "min": 76723, "max": 123628}}, "delta": {"pass_rate": "+0.00", "time_seconds": "-17.2", "tokens": "+6508"}}, "notes": ["All 15 assertions passed in both configurations across all 3 cases (30/30) \u00e2\u20ac\u201d none of the current assertions discriminate with_skill from without_skill on this codebase. The existing repo already wires the conventions the assertions check (role claim in the JWT, DTO pattern, service-layer delegation), so a capable baseline model follows them without the skill's explicit instructions. This isn't a sign the skill is useless \u00e2\u20ac\u201d it's a sign these 3 evals, on this particular well-structured codebase, don't yet create a situation where only the skill's guidance prevents a wrong answer. A future iteration should either test on a messier/less-idiomatic codebase, or add assertions that check for things the skill uniquely prescribes (e.g. the exact 8-phase explain-before/report-after structure, or a specific security requirement baseline Claude might skip, like PKCE/state validation commentary) rather than outcomes a competent engineer reaches either way.", "with_skill used more tokens on every one of the 3 cases (mean 99,085 vs 92,577, +7%) and was NOT reliably faster \u00e2\u20ac\u201d it was slower on the refresh-token case specifically (894s vs 775s) despite landing on a comparable implementation. This is consistent with the skill's explicit phase-by-phase narration (8 workflow phases, explain-before/summarize-after on each) adding verbosity without a corresponding quality payoff visible in these assertions.", "Qualitative difference not captured by any assertion: the with_skill refresh-token run added a GlobalExceptionHandler (@RestControllerAdvice) to centralize the new error's JSON shape, consistent with the existing RestAuthenticationEntryPoint/RestAccessDeniedHandler pattern; the without_skill run handled the error inline in the controller instead. Minor, but a real architectural-consistency edge for with_skill worth preserving if assertions are tightened.", "Grading in this iteration is based on each subagent's self-reported final text (SubagentHandback), not an independently read transcript or file diff \u00e2\u20ac\u201d every subagent's Write tool refused its REPORT.md path with 'Subagents should return findings as text, not write report files,' so the orchestrator persisted the hand-backed text itself. This is a tooling constraint on this run, not an evidence-quality endorsement: a stronger grading pass would diff the actual changed files in each isolated project copy under spring-oauth2-backend-repos/ rather than trust the executor's account of what it did.", "The RBAC case's 5th assertion ('explained before implementing... reported real outcome') is weakly discriminating for the same reason: without a transcript, grading can't tell an agent that explained before coding from one that reconstructed a plausible-sounding explanation into its final report afterward. Both RBAC runs passed it, but the with_skill run's report was structured as explicit numbered phases while the without_skill run's was narrative \u00e2\u20ac\u201d if this distinction matters, the assertion should require transcript evidence specifically."]}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + escapeHtml(summary.passed || 0) + ' passed, ' + escapeHtml(summary.failed || 0) + ' failed of ' + escapeHtml(summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML.replace(/"/g, "&quot;");
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += escapeHtml(metadata.timestamp) + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + escapeHtml(metadata.evals_run.join(", ")) + " &mdash; ";
+      html += escapeHtml(metadata.runs_per_configuration || "?") + (metadata.runs_per_configuration === 1 ? " run" : " runs") + " per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+      // With a single configuration there is nothing to compare: only its column is shown
+      const compare = cells => configs.length >= 2 ? cells : "";
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th>" + compare("<th>" + escapeHtml(labelB) + "</th><th>Delta</th>") + "</tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += compare("<td>" + fmtStat(b.pass_rate, true) + "</td>");
+      html += compare('<td class="' + deltaClass(delta.pass_rate) + '">' + escapeHtml(delta.pass_rate || "—") + "</td>") + "</tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += compare("<td>" + fmtStat(b.time_seconds, false) + "</td>");
+        html += compare('<td class="' + deltaClass(delta.time_seconds) + '">' + escapeHtml(delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td>") + "</tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += compare("<td>" + fmtStat(b.tokens, false) + "</td>");
+        html += compare('<td class="' + deltaClass(delta.tokens) + '">' + escapeHtml(delta.tokens || "—") + "</td>") + "</tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        // Numeric ids first, then ids that are names
+        const rank = id => typeof id === "number" ? 0 : 1;
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) =>
+          rank(a) - rank(b) || (rank(a) ? String(a).localeCompare(String(b)) : a - b));
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = escapeHtml(config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()));
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + escapeHtml(run.run_number) + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + escapeHtml(r.passed || 0) + "/" + escapeHtml(r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + escapeHtml(r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + escapeHtml(run.run_number) + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

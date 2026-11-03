@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "An ADMIN role/value was added to the project's role model (e.g. the Role enum), rather than hardcoding a separate ad-hoc check unrelated to the existing role system.",
+      "passed": true,
+      "evidence": "Report: 'Role enum — added ADMIN alongside the existing USER.'"
+    },
+    {
+      "text": "GET /api/admin/users is restricted so only an ADMIN-authenticated caller can access it, and a regular USER-authenticated request to it is expected to receive a 403, not a 200.",
+      "passed": true,
+      "evidence": "Report: added '.requestMatchers(\"/api/admin/**\").hasRole(\"ADMIN\")'; AdminControllerTest covers no-cookie->401, USER cookie->403, ADMIN cookie->200, all reported passing (3/3)."
+    },
+    {
+      "text": "The admin users endpoint returns a DTO for each user (matching the project's existing dto package convention) rather than serializing the raw User JPA entity directly.",
+      "passed": true,
+      "evidence": "Report: 'AdminController ... returns List<UserResponse> built from UserService.listAll(), mapped through the existing UserResponse.from(User) factory.'"
+    },
+    {
+      "text": "The logic for listing users lives in a service class; the new controller method stays thin (delegates to the service rather than querying the repository or applying business logic itself).",
+      "passed": true,
+      "evidence": "Report: 'UserService.listAll() — new read-only transactional method that delegates to userRepository.findAll() ... Added ... to keep the controller thin.'"
+    },
+    {
+      "text": "Before writing code, the agent explained what it was about to implement and which files it would touch; after implementing, it ran the Maven test suite (or at least a compile) and reported the real outcome rather than an unverified claim of success.",
+      "passed": true,
+      "evidence": "Report's 'Summary' and 'Key observation during exploration' sections explain the rationale and plan narratively (though not in the skill's explicit numbered-phase format) before the 'Changes made' section; real Maven runs are documented with the actual console summary ('Tests run: 10, Failures: 0, Errors: 0, Skipped: 0 ... BUILD SUCCESS')."
+    }
+  ],
+  "summary": { "passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0 },
+  "timing": { "executor_duration_seconds": 515.7 },
+  "eval_feedback": {
+    "overall": "Assertion 5 passes here on slightly weaker evidence than the with_skill run: the explanation is present but not structured as an explicit pre-implementation phase the way the skill's workflow prescribes, and no transcript was available to confirm the explanation actually preceded the code changes rather than being reconstructed afterward in the final report. Worth tightening this assertion in a future iteration to require transcript evidence specifically, not just report narrative."
+  }
+}
