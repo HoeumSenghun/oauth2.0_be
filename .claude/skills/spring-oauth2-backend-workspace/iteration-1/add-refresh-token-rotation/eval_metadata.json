@@ -1,0 +1,12 @@
+{
+  "eval_name": "add-refresh-token-rotation",
+  "prompt": "Add refresh token support to this OAuth2 backend — rotate the refresh token on use and let it be revoked on logout.",
+  "assertions": [
+    "A persisted refresh token mechanism (a new entity/table and repository) was added, rather than simply extending the access JWT's expiration.",
+    "Using a refresh token to get a new access token rotates it: the old refresh token is invalidated and a new one is issued, rather than the same refresh token staying valid indefinitely.",
+    "Logging out revokes the refresh token server-side (e.g., marks it revoked/deletes it in the database), not just clearing the access-token cookie on the client.",
+    "The new refresh-token logic lives in a service class called from a thin controller, matching the project's existing Controller -> Service -> Repository layering, rather than embedding persistence or token logic directly in the controller.",
+    "The agent actually ran the Maven test suite (or at least a compile) against its changes and reported the real result, rather than claiming the implementation or tests succeeded without checking.",
+    "No new secret, client credential, or signing key is hardcoded in source; any new configuration follows the existing pattern of environment-variable-backed properties in application.yml."
+  ]
+}

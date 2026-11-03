@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: add-rbac-admin-endpoint
+expected_outcome: |
+  The Role enum gains an ADMIN value. A new GET /api/admin/users endpoint lists all
+  users, restricted so only ADMIN-authenticated requests succeed; a request authenticated
+  as a plain USER receives 403 (reusing the project's existing JSON 403 handling where
+  possible). The endpoint returns a DTO, not the raw User JPA entity. The listing logic
+  lives in a service, with the controller staying thin. The agent explains its plan
+  before implementing and runs the Maven test suite afterward, reporting real results.

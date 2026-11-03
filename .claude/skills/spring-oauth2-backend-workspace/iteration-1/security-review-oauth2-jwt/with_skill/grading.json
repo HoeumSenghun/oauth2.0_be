@@ -1,0 +1,31 @@
+{
+  "expectations": [
+    {
+      "text": "The review references specific classes/files actually present in this repo (e.g. SecurityConfig, JwtService, AccessTokenCookie, OAuth2SuccessHandler, CorsConfig) rather than reading as generic OAuth2/JWT security advice that could apply to any project.",
+      "passed": true,
+      "evidence": "Review cites exact classes and lines throughout, e.g. 'AccessTokenCookie.base() sets .secure(secure) straight from that property', 'JwtAuthenticationFilter.authenticate() ignores the claim and re-reads user.getRole()', 'CorsConfig binds allowedOrigins to the single configured app.frontend-url'."
+    },
+    {
+      "text": "The review flags both the disabled CSRF protection and the cookie's secure=false setting as risks that must be revisited before a production/HTTPS deployment.",
+      "passed": true,
+      "evidence": "Finding 1 (HIGH): 'app.cookie.secure defaults to false ... If this config ships to production unchanged ... the access_token cookie will be sent over plain HTTP.' Finding 3 (MEDIUM): 'CSRF is disabled with no compensating control beyond SameSite=Lax'."
+    },
+    {
+      "text": "The review notes the absence of refresh tokens and server-side token revocation as a gap (the current JWT is a fixed-lifetime bearer token with no way to invalidate it before expiry).",
+      "passed": true,
+      "evidence": "Finding 2 (MEDIUM-HIGH): 'No JWT revocation; \"logout\" doesn't actually invalidate the token ... This implementation has neither refresh-token rotation nor revocation — it's a single long-lived access token with no server-side kill switch.'"
+    },
+    {
+      "text": "The review does not claim a vulnerability that isn't actually present in the code (e.g. does not claim secrets are hardcoded when they are loaded from environment variables, or that JWT signature/expiry validation is missing when JwtService already performs it).",
+      "passed": true,
+      "evidence": "The 'Confirmed OK' section explicitly verifies rather than flags: 'Secrets aren't hardcoded ... No algorithm-confusion / alg:none risk ... JwtService uses Keys.hmacShaKeyFor + Jwts.parser().verifyWith(key)'. No false-positive findings identified in the report."
+    },
+    {
+      "text": "No project source files were created, edited, or deleted — this task is a review only.",
+      "passed": true,
+      "evidence": "Report opening line: 'No changes were made to the project copy — this was a read-only review. All files ... were only read, never edited.'"
+    }
+  ],
+  "summary": { "passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0 },
+  "timing": { "executor_duration_seconds": 465.29 }
+}

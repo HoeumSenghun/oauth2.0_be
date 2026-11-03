@@ -1,0 +1,10 @@
+schema_version: "1.1"
+name: add-refresh-token-rotation
+expected_outcome: |
+  A persisted refresh token (new entity + repository, not just a longer-lived JWT) is
+  added, following the project's existing Controller -> Service -> Repository layering.
+  Using a refresh token rotates it (the old one stops working, a new one is issued).
+  Logging out revokes the refresh token server-side, not just clearing the access-token
+  cookie. No secrets are hardcoded. The implementation is explained before/after in
+  phases, and the agent runs the Maven test suite and reports real results rather than
+  asserting success without checking.

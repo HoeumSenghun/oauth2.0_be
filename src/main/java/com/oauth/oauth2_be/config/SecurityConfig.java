@@ -44,12 +44,16 @@ public class SecurityConfig {
                                 "/ping",
                                 "/oauth2/**",
                                 "/login/oauth2/**",
+                                "/api/auth/refresh",
+                                "/api/auth/register",
+                                "/api/auth/login",
                                 "/error",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs",
                                 "/v3/api-docs/**"
                         ).permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2

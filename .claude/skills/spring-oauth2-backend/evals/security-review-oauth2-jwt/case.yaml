@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: security-review-oauth2-jwt
+expected_outcome: |
+  A written security review grounded in the actual code (SecurityConfig, JwtService,
+  AccessTokenCookie, OAuth2SuccessHandler, CorsConfig), not generic boilerplate advice.
+  It flags real, present risks such as CSRF being disabled, the cookie's secure flag
+  being false, and the lack of refresh tokens / server-side revocation. It does not
+  invent vulnerabilities that aren't actually in the code. No source files are modified.

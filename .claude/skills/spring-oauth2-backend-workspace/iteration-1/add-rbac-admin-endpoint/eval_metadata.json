@@ -1,0 +1,11 @@
+{
+  "eval_name": "add-rbac-admin-endpoint",
+  "prompt": "I want an ADMIN role so admins can hit a new GET /api/admin/users endpoint that lists all users; regular USER accounts should get a 403. Implement RBAC for this.",
+  "assertions": [
+    "An ADMIN role/value was added to the project's role model (e.g. the Role enum), rather than hardcoding a separate ad-hoc check unrelated to the existing role system.",
+    "GET /api/admin/users is restricted so only an ADMIN-authenticated caller can access it, and a regular USER-authenticated request to it is expected to receive a 403, not a 200.",
+    "The admin users endpoint returns a DTO for each user (matching the project's existing dto package convention) rather than serializing the raw User JPA entity directly.",
+    "The logic for listing users lives in a service class; the new controller method stays thin (delegates to the service rather than querying the repository or applying business logic itself).",
+    "Before writing code, the agent explained what it was about to implement and which files it would touch; after implementing, it ran the Maven test suite (or at least a compile) and reported the real outcome rather than an unverified claim of success."
+  ]
+}
