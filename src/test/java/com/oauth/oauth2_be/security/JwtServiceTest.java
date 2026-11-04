@@ -5,12 +5,23 @@ import com.oauth.oauth2_be.entity.User;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class JwtServiceTest {
 
     private static final String SECRET = "test-jwt-secret-key-must-be-32-chars";
 
     private final JwtService jwtService = new JwtService(SECRET, 60_000);
+
+    @Test
+    void missingOrShortSecretFailsFast() {
+        assertThatThrownBy(() -> new JwtService("", 60_000))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("JWT_SECRET");
+        assertThatThrownBy(() -> new JwtService("too-short", 60_000))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("32");
+    }
 
     @Test
     void validTokenContainsUserIdAndRole() {
