@@ -49,6 +49,7 @@ We issue our own JWT instead of using Google's/GitHub's token directly, so we co
 
 - Java 17+
 - PostgreSQL running locally
+- Redis running locally (used to revoke access tokens on logout — e.g. `docker run -p 6379:6379 redis:7-alpine`). Not needed to run the test suite, which uses an in-memory fallback.
 - IntelliJ IDEA
 - Google Cloud Console project (OAuth credentials)
 - GitHub OAuth App (OAuth credentials)
@@ -107,7 +108,7 @@ GET http://localhost:8080/ping
 | GET | `/oauth2/authorization/google` | No | Starts Google login |
 | GET | `/oauth2/authorization/github` | No | Starts GitHub login |
 | GET | `/api/auth/me` | Yes (JWT cookie) | Returns current logged-in user |
-| POST | `/api/auth/logout` | Yes (JWT cookie) | Clears the `access_token` cookie |
+| POST | `/api/auth/logout` | No (reads cookies directly) | Revokes the access & refresh tokens and clears both cookies |
 
 ---
 
@@ -122,14 +123,22 @@ GET http://localhost:8080/ping
 | `JWT_SECRET` | Secret key used to sign JWT tokens (32+ characters) |
 | `DB_USERNAME` | PostgreSQL username (defaults to `postgres`) |
 | `DB_PASSWORD` | PostgreSQL password (defaults to `root`) |
+| `REDIS_HOST` | Redis host for access-token revocation (defaults to `localhost`) |
+| `REDIS_PORT` | Redis port (defaults to `6379`) |
+| `REDIS_PASSWORD` | Redis password, if required (defaults to none) |
+| `APP_JWT_ISSUER` | JWT `iss` claim, validated on every request (defaults to `oauth2-be`) |
+| `APP_JWT_AUDIENCE` | JWT `aud` claim, validated on every request (defaults to `oauth2-be-clients`) |
+| `APP_REVOCATION_STORE` | `redis` (default) or `in-memory` (single-instance fallback if Redis is unavailable) |
 
 ---
 
 ## Notes / Known Limitations
 
-- CSRF is disabled for simplicity — fine for a demo, should be reconsidered for production.
+- CSRF is disabled for simplicity. The `access_token`/`refresh_token` cookies are `SameSite=Lax`, which already blocks the classic cross-site form/fetch CSRF attack on `POST`/`PATCH`/`DELETE` routes — but this is not a substitute for a real CSRF token if the cookie policy ever changes.
 - `Secure` flag on the JWT cookie is `false` for local HTTP testing — must be `true` in production (HTTPS).
 - GitHub may not return an email when the address is private. Login still succeeds with a `<id>+<login>@users.noreply.github.com` fallback.
+- The OAuth2 redirect to the frontend (`/auth/callback?token=...`) still carries the JWT in the URL, by design — the frontend reads it from there because the access-token cookie is scoped to the backend's own domain and isn't visible cross-site. This is a known, accepted exposure (browser history, `Referer` headers, frontend-side logs) unless/until the frontend is changed to rely on `SameSite=None; Secure` cookies instead.
+- Access tokens are now revocable (Redis-backed, by `jti`): logout revokes both the refresh token and the current access token, so a copied JWT stops working immediately rather than lingering until its natural expiry.
 
 ---
 

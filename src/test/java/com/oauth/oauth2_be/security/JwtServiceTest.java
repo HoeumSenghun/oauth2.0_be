@@ -10,15 +10,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class JwtServiceTest {
 
     private static final String SECRET = "test-jwt-secret-key-must-be-32-chars";
+    private static final String ISSUER = "oauth2-be";
+    private static final String AUDIENCE = "oauth2-be-clients";
 
-    private final JwtService jwtService = new JwtService(SECRET, 60_000);
+    private final JwtService jwtService = new JwtService(SECRET, 60_000, ISSUER, AUDIENCE);
 
     @Test
     void missingOrShortSecretFailsFast() {
-        assertThatThrownBy(() -> new JwtService("", 60_000))
+        assertThatThrownBy(() -> new JwtService("", 60_000, ISSUER, AUDIENCE))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("JWT_SECRET");
-        assertThatThrownBy(() -> new JwtService("too-short", 60_000))
+        assertThatThrownBy(() -> new JwtService("too-short", 60_000, ISSUER, AUDIENCE))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("32");
     }
@@ -34,8 +36,34 @@ class JwtServiceTest {
     }
 
     @Test
+    void validTokenHasUniqueJtiIssuerAndAudience() {
+        String tokenA = jwtService.generateToken(user(1L));
+        String tokenB = jwtService.generateToken(user(1L));
+
+        assertThat(jwtService.getJti(tokenA)).isNotBlank().isNotEqualTo(jwtService.getJti(tokenB));
+        assertThat(jwtService.parse(tokenA).getIssuer()).isEqualTo(ISSUER);
+        assertThat(jwtService.parse(tokenA).getAudience()).contains(AUDIENCE);
+    }
+
+    @Test
+    void tokenWithWrongIssuerIsRejected() {
+        JwtService otherIssuer = new JwtService(SECRET, 60_000, "some-other-service", AUDIENCE);
+        String token = otherIssuer.generateToken(user(1L));
+
+        assertThat(jwtService.validate(token)).isFalse();
+    }
+
+    @Test
+    void tokenWithWrongAudienceIsRejected() {
+        JwtService otherAudience = new JwtService(SECRET, 60_000, ISSUER, "some-other-clients");
+        String token = otherAudience.generateToken(user(1L));
+
+        assertThat(jwtService.validate(token)).isFalse();
+    }
+
+    @Test
     void expiredTokenIsRejected() {
-        JwtService expiredService = new JwtService(SECRET, -60_000);
+        JwtService expiredService = new JwtService(SECRET, -60_000, ISSUER, AUDIENCE);
         String token = expiredService.generateToken(user(1L));
 
         assertThat(expiredService.validate(token)).isFalse();

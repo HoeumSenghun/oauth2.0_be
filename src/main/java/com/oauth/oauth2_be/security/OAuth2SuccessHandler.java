@@ -75,6 +75,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                     profile.name(),
                     profile.avatarUrl()
             );
+            log.info("OAuth2 login succeeded, provider={}, userId={}", registrationId, user.getId());
             String jwt = jwtService.generateToken(user);
             String refreshToken = refreshTokenService.issue(user);
             ResponseCookie cookie = accessTokenCookie.create(jwt, Duration.ofMillis(jwtService.getExpirationMs()));
