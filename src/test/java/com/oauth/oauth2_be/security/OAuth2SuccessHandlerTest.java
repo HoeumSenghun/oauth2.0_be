@@ -69,7 +69,7 @@ class OAuth2SuccessHandlerTest {
 
         handler.onAuthenticationSuccess(request, response, authentication);
 
-        assertThat(response.getRedirectedUrl()).isEqualTo(FRONTEND_URL + "/auth/callback");
+        assertThat(response.getRedirectedUrl()).startsWith(FRONTEND_URL + "/auth/callback?token=");
         String setCookie = response.getHeader("Set-Cookie");
         assertThat(setCookie).contains("access_token=").contains("HttpOnly");
     }

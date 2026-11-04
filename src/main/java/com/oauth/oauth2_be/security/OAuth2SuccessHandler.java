@@ -17,6 +17,8 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 @Slf4j
@@ -54,39 +56,62 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             HttpServletResponse response,
             Authentication authentication
     ) throws IOException {
-        OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
-        String registrationId = oauthToken.getAuthorizedClientRegistrationId();
-        OAuth2User oauth2User = oauthToken.getPrincipal();
+        try {
+            OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+            String registrationId = oauthToken.getAuthorizedClientRegistrationId();
+            OAuth2User oauth2User = oauthToken.getPrincipal();
 
-        OAuth2UserInfo.Profile profile = profile(registrationId, oauth2User);
-        if (profile == null || isBlank(profile.providerId()) || isBlank(profile.email())) {
-            log.warn("OAuth2 login missing required profile data for provider={}", registrationId);
-            getRedirectStrategy().sendRedirect(request, response, frontendUrl + "/auth/callback?error=oauth_failed");
-            return;
+            OAuth2UserInfo.Profile profile = profile(registrationId, oauth2User);
+            if (profile == null || isBlank(profile.providerId()) || isBlank(profile.email())) {
+                log.warn("OAuth2 login missing required profile data for provider={}", registrationId);
+                redirectWithError(request, response, "oauth_failed");
+                return;
+            }
+
+            User user = userService.findOrCreate(
+                    profile.provider(),
+                    profile.providerId(),
+                    profile.email(),
+                    profile.name(),
+                    profile.avatarUrl()
+            );
+            String jwt = jwtService.generateToken(user);
+            String refreshToken = refreshTokenService.issue(user);
+            ResponseCookie cookie = accessTokenCookie.create(jwt, Duration.ofMillis(jwtService.getExpirationMs()));
+            ResponseCookie refreshCookie = refreshTokenCookie.create(
+                    refreshToken, Duration.ofMillis(refreshTokenService.getRefreshExpirationMs())
+            );
+            response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+            response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                session.invalidate();
+            }
+            clearAuthenticationAttributes(request);
+            // Frontend is on another origin (e.g. localhost:3000), so Render-domain
+            // cookies are not visible to the Next.js app. Pass the JWT so the FE can
+            // store it on its own domain, then call /api/auth/me.
+            String redirect = frontendUrl + "/auth/callback?token="
+                    + URLEncoder.encode(jwt, StandardCharsets.UTF_8);
+            getRedirectStrategy().sendRedirect(request, response, redirect);
+        } catch (Exception ex) {
+            // Avoid Spring Whitelabel /error 500 — send the browser back to the FE.
+            log.error("OAuth2 success handling failed", ex);
+            redirectWithError(request, response, "oauth_server_error");
         }
+    }
 
-        User user = userService.findOrCreate(
-                profile.provider(),
-                profile.providerId(),
-                profile.email(),
-                profile.name(),
-                profile.avatarUrl()
+    private void redirectWithError(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            String error
+    ) throws IOException {
+        getRedirectStrategy().sendRedirect(
+                request,
+                response,
+                frontendUrl + "/auth/callback?error=" + error
         );
-        String jwt = jwtService.generateToken(user);
-        String refreshToken = refreshTokenService.issue(user);
-        ResponseCookie cookie = accessTokenCookie.create(jwt, Duration.ofMillis(jwtService.getExpirationMs()));
-        ResponseCookie refreshCookie = refreshTokenCookie.create(
-                refreshToken, Duration.ofMillis(refreshTokenService.getRefreshExpirationMs())
-        );
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
-
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            session.invalidate();
-        }
-        clearAuthenticationAttributes(request);
-        getRedirectStrategy().sendRedirect(request, response, frontendUrl + "/auth/callback");
     }
 
     private static OAuth2UserInfo.Profile profile(String registrationId, OAuth2User user) {
