@@ -22,10 +22,15 @@ public class JwtService {
             @Value("${app.jwt.secret}") String secret,
             @Value("${app.jwt.expiration}") long expirationMs
     ) {
-        if (secret == null || secret.length() < 32) {
-            throw new IllegalStateException("JWT_SECRET must be at least 32 characters");
+        String value = secret == null ? "" : secret.trim();
+        if (value.length() < 32) {
+            throw new IllegalStateException(
+                    "JWT_SECRET is missing or shorter than 32 characters. "
+                            + "Add it in the host environment (Render: Environment → JWT_SECRET) "
+                            + "and redeploy. Do not commit this value."
+            );
         }
-        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.key = Keys.hmacShaKeyFor(value.getBytes(StandardCharsets.UTF_8));
         this.expirationMs = expirationMs;
     }
 
