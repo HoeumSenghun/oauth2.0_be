@@ -37,7 +37,15 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                // STATELESS: this API is authenticated purely by the access_token JWT on every
+                // request. IF_REQUIRED would let Spring Security persist the authenticated
+                // identity into an HttpSession (JSESSIONID), which would keep a user logged in
+                // after their JWT expires or is revoked on logout — the session, not the JWT,
+                // would end up being the real credential. OAuth2 login still works under
+                // STATELESS: the authorization-request session (state/PKCE) used during the
+                // provider handshake is created and read explicitly by Spring's
+                // HttpSessionOAuth2AuthorizationRequestRepository, independent of this policy.
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
@@ -47,6 +55,10 @@ public class SecurityConfig {
                                 "/api/auth/refresh",
                                 "/api/auth/register",
                                 "/api/auth/login",
+                                // Logout never relies on the authenticated principal — it reads
+                                // whatever cookies are present and revokes/clears them, tolerating
+                                // a missing or already-invalid access token (see AuthController).
+                                "/api/auth/logout",
                                 "/error",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",

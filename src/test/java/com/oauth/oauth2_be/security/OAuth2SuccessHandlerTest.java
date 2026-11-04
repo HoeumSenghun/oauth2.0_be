@@ -36,7 +36,9 @@ class OAuth2SuccessHandlerTest {
     @Mock
     private RefreshTokenService refreshTokenService;
 
-    private final JwtService jwtService = new JwtService("test-jwt-secret-key-must-be-32-chars", 60_000);
+    private final JwtService jwtService = new JwtService(
+            "test-jwt-secret-key-must-be-32-chars", 60_000, "oauth2-be", "oauth2-be-clients"
+    );
     private final AccessTokenCookie accessTokenCookie = new AccessTokenCookie(false);
     private final RefreshTokenCookie refreshTokenCookie = new RefreshTokenCookie(false);
 

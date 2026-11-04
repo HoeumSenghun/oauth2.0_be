@@ -27,3 +27,8 @@ app:
     secret: test-jwt-secret-key-must-be-32-chars
     expiration: 86400000
     refresh-expiration: 2592000000
+    issuer: oauth2-be
+    audience: oauth2-be-clients
+  revocation:
+    # No Redis in the test environment: tests run against the in-memory fallback.
+    store: in-memory

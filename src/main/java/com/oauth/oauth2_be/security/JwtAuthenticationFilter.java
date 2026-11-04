@@ -8,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,12 +19,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserService userService;
+    private final TokenRevocationService tokenRevocationService;
 
     @Override
     protected void doFilterInternal(
@@ -35,12 +38,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = extractToken(request);
             if (token != null && jwtService.validate(token)) {
                 authenticate(request, token);
+            } else if (token != null) {
+                log.debug("Rejected request with an invalid or malformed access token");
             }
         }
         filterChain.doFilter(request, response);
     }
 
     private void authenticate(HttpServletRequest request, String token) {
+        String jti = jwtService.getJti(token);
+        if (tokenRevocationService.isRevoked(jti)) {
+            log.warn("Rejected reuse attempt of a revoked access token, jti={}", jti);
+            return;
+        }
         try {
             User user = userService.getById(jwtService.getUserId(token));
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(

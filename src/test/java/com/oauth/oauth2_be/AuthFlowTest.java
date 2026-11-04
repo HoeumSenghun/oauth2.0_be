@@ -190,6 +190,64 @@ class AuthFlowTest {
     }
 
     @Test
+    void validAccessTokenIsReplayableFromASeparateClientBeforeRevocation() throws Exception {
+        // Mirrors section 2.C of the audit spec: a normal, not-yet-revoked JWT is a bearer
+        // credential by design and is expected to work from any client that presents it.
+        User user = userRepository.save(User.builder()
+                .email("replay@example.com")
+                .name("Replay")
+                .provider(AuthProvider.GOOGLE)
+                .providerId("google-replay")
+                .build());
+        String token = jwtService.generateToken(user);
+
+        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(user.getId()));
+
+        // "Separate client" = a new request presenting the same token value, no shared state.
+        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(user.getId()));
+    }
+
+    @Test
+    void logoutRevokesAccessTokenSoReuseAfterLogoutIsRejected() throws Exception {
+        User user = userRepository.save(User.builder()
+                .email("revoke-access@example.com")
+                .name("RevokeAccess")
+                .provider(AuthProvider.GOOGLE)
+                .providerId("google-revoke-access")
+                .build());
+        String token = jwtService.generateToken(user);
+
+        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", token)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/auth/logout").cookie(new Cookie("access_token", token)))
+                .andExpect(status().isNoContent());
+
+        // The same JWT, copied into a different client (e.g. Postman), must no longer work,
+        // even though it has not naturally expired.
+        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", token)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("unauthorized"));
+    }
+
+    @Test
+    void logoutWithMissingAccessTokenCookieStillClearsCookiesSafely() throws Exception {
+        mockMvc.perform(post("/api/auth/logout"))
+                .andExpect(status().isNoContent())
+                .andExpect(header().exists("Set-Cookie"));
+    }
+
+    @Test
+    void logoutWithMalformedAccessTokenCookieStillSucceeds() throws Exception {
+        mockMvc.perform(post("/api/auth/logout").cookie(new Cookie("access_token", "not-a-jwt")))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
     void logoutRevokesRefreshTokenSoSubsequentRefreshFails() throws Exception {
         User user = userRepository.save(User.builder()
                 .email("logout-revoke@example.com")
