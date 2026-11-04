@@ -7,7 +7,7 @@ springdoc:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/oauth2_db
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/oauth2_db}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:root}
   jpa:
@@ -22,18 +22,18 @@ spring:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
             scope: openid, profile, email
-            # Fixed host. Google compares this string exactly, and localhost and 127.0.0.1 are not the same.
-            redirect-uri: "http://localhost:8080/login/oauth2/code/google"
+            # Google compares this string exactly; must match a URI registered in the Google Cloud Console.
+            redirect-uri: "${APP_BACKEND_URL:http://localhost:8080}/login/oauth2/code/google"
           github:
             client-id: ${GITHUB_CLIENT_ID}
             client-secret: ${GITHUB_CLIENT_SECRET}
             scope: read:user, user:email
-            redirect-uri: "http://localhost:8080/login/oauth2/code/github"
+            redirect-uri: "${APP_BACKEND_URL:http://localhost:8080}/login/oauth2/code/github"
 
 app:
-  frontend-url: http://localhost:3000
+  frontend-url: ${APP_FRONTEND_URL:http://localhost:3000}
   cookie:
-    secure: false
+    secure: ${APP_COOKIE_SECURE:false}
   jwt:
     secret: ${JWT_SECRET}
     expiration: 900000
