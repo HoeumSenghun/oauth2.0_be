@@ -1,5 +1,6 @@
 FROM eclipse-temurin:17-jdk-alpine AS build
 WORKDIR /app
+ENV MAVEN_OPTS="-Xmx512m"
 
 COPY mvnw .
 COPY .mvn .mvn
