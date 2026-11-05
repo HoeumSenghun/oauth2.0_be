@@ -3,6 +3,7 @@ package com.oauth.oauth2_be.service;
 import com.oauth.oauth2_be.entity.RefreshToken;
 import com.oauth.oauth2_be.entity.User;
 import com.oauth.oauth2_be.repository.RefreshTokenRepository;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,6 +63,11 @@ public class RefreshTokenService {
 
         existing.setRevoked(true);
         User user = existing.getUser();
+        // User is a lazy proxy (RefreshToken.user); the caller reads its fields (e.g. for the
+        // new JWT) after this transaction/session has closed, so force it to load now or it
+        // throws LazyInitializationException. A plain getId() wouldn't trigger it — Hibernate
+        // proxies already know their id without hitting the DB.
+        Hibernate.initialize(user);
         return new Rotated(user, issue(user));
     }
 

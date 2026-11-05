@@ -66,3 +66,10 @@ app:
   revocation:
     # "redis" (default, needed for real multi-instance revocation) or "in-memory" (single-instance/dev fallback).
     store: ${APP_REVOCATION_STORE:redis}
+  oauth2:
+    http:
+      # Bounds for the token-exchange and userinfo calls to Google/GitHub during login
+      # (see OAuth2ClientHttpConfig) — without these, an unresponsive provider hangs the
+      # request thread indefinitely instead of failing into OAuth2FailureHandler.
+      connect-timeout-ms: ${APP_OAUTH2_CONNECT_TIMEOUT_MS:5000}
+      read-timeout-ms: ${APP_OAUTH2_READ_TIMEOUT_MS:5000}
