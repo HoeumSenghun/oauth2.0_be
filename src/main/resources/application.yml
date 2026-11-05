@@ -10,10 +10,24 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/oauth2_db}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:root}
+    hikari:
+      # Supabase's pooler (session mode) caps the whole project to 15 backend
+      # connections. Hikari's own default (minimumIdle = maximumPoolSize = 10)
+      # would let a single instance claim 10 of those at startup, whether or
+      # not it's handling traffic — two instances running at once (e.g. a
+      # local dev run alongside the deployed app) already exceeds the limit.
+      # Keep this small and let it grow lazily instead.
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:4}
+      minimum-idle: ${DB_POOL_MIN_IDLE:1}
+      connection-timeout: 10000
+      idle-timeout: 300000
+      max-lifetime: 1700000
+      leak-detection-threshold: 30000
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
+    open-in-view: false
   data:
     redis:
       host: ${REDIS_HOST:localhost}
